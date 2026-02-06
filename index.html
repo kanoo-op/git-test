@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PostureView - 임상 자세 분석</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            </div>
+            <h1 class="loading-title">PostureView</h1>
+            <p class="loading-subtitle">임상 해부학 뷰어</p>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                </div>
+                <div class="progress-info">
+                    <span id="progress-percent">0%</span>
+                    <span id="progress-text">모델 로딩 준비 중...</span>
+                </div>
+            </div>
+            <p class="loading-tip">팁: 마우스 휠로 확대/축소, 클릭 + 드래그로 회전</p>
+        </div>
+        <div id="protocol-warning" class="protocol-warning" style="display:none;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span>로컬 서버가 필요합니다. 실행: <code>npx serve .</code> 또는 <code>python -m http.server 8000</code></span>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div id="app" class="app" style="display:none;">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83"/>
+                    </svg>
+                    <span class="logo-text">PostureView</span>
+                </div>
+            </div>
+
+            <!-- Model Selector -->
+            <div class="sidebar-section" id="model-selector-section">
+                <div class="section-label">모델 선택</div>
+                <select id="select-model" class="model-select">
+                    <option value="original">원본 (고해상도)</option>
+                    <option value="rigging">리깅용 (경량)</option>
+                </select>
+                <div id="model-loading-bar" class="model-loading-bar" style="display:none;">
+                    <div id="model-loading-fill" class="model-loading-fill"></div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="section-label">메뉴</div>
+                <button class="nav-item active" data-view="viewer">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span>3D 뷰어</span>
+                </button>
+                <button class="nav-item" data-view="patients">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span>환자 관리</span>
+                </button>
+                <button class="nav-item" data-view="mapping">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span>매핑 에디터</span>
+                </button>
+            </nav>
+
+            <!-- Patient Card -->
+            <div id="patient-card" class="patient-card" style="display:none;">
+                <div class="section-label">현재 환자</div>
+                <div class="patient-info">
+                    <div class="patient-name" id="patient-name">-</div>
+                    <div class="patient-meta" id="patient-meta">-</div>
+                </div>
+            </div>
+
+            <!-- Tissue Toggles -->
+            <div class="sidebar-section" id="tissue-toggles">
+                <div class="section-label">조직 레이어</div>
+                <label class="tissue-toggle">
+                    <input type="checkbox" checked data-tissue="Muscles.001">
+                    <span class="tissue-swatch" style="background:#F24D2E;"></span>
+                    <span>근육</span>
+                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Muscles.001">
+                </label>
+                <label class="tissue-toggle">
+                    <input type="checkbox" checked data-tissue="Bone">
+                    <span class="tissue-swatch" style="background:#CC8C4F;"></span>
+                    <span>뼈</span>
+                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Bone">
+                </label>
+                <label class="tissue-toggle">
+                    <input type="checkbox" checked data-tissue="Tendon.001">
+                    <span class="tissue-swatch" style="background:#857D9E;"></span>
+                    <span>힘줄</span>
+                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Tendon.001">
+                </label>
+                <label class="tissue-toggle">
+                    <input type="checkbox" checked data-tissue="Ligament.002">
+                    <span class="tissue-swatch" style="background:#CCFFF7;"></span>
+                    <span>인대</span>
+                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Ligament.002">
+                </label>
+                <label class="tissue-toggle">
+                    <input type="checkbox" checked data-tissue="Cartilage">
+                    <span class="tissue-swatch" style="background:#9ECCCC;"></span>
+                    <span>연골</span>
+                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Cartilage">
+                </label>
+                <label class="tissue-toggle">
+                    <input type="checkbox" checked data-tissue="Articular_capsule.002">
+                    <span class="tissue-swatch" style="background:#8F75CC;"></span>
+                    <span>관절낭</span>
+                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Articular_capsule.002">
+                </label>
+            </div>
+
+            <!-- Mapping Section -->
+            <div class="sidebar-section" id="mapping-section">
+                <div class="section-label">부위 매핑</div>
+                <div class="mapping-status" id="mapping-status">
+                    <div class="mapping-empty">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <span>매핑 없음</span>
+                    </div>
+                </div>
+                <div class="mapping-actions">
+                    <button id="btn-load-mapping" class="mapping-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        JSON 불러오기
+                    </button>
+                    <button id="btn-clear-mapping" class="mapping-btn" style="display:none;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        초기화
+                    </button>
+                </div>
+                <input type="file" id="input-mapping-file" accept=".json" style="display:none;">
+                <div id="mapping-regions" class="mapping-regions"></div>
+            </div>
+
+            <!-- View Controls -->
+            <div class="sidebar-section">
+                <div class="section-label">카메라 뷰</div>
+                <div class="view-presets">
+                    <button class="preset-btn" data-view-preset="front" title="전면 뷰">전면</button>
+                    <button class="preset-btn" data-view-preset="back" title="후면 뷰">후면</button>
+                    <button class="preset-btn" data-view-preset="left" title="좌측 뷰">좌측</button>
+                    <button class="preset-btn" data-view-preset="right" title="우측 뷰">우측</button>
+                    <button class="preset-btn" data-view-preset="top" title="상단 뷰">상단</button>
+                    <button class="preset-btn" data-view-preset="reset" title="초기화">초기화</button>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="btn-export" class="footer-btn" title="데이터 내보내기">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    내보내기
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Viewer Area -->
+        <main class="main-content">
+            <!-- 3D Viewer -->
+            <div id="viewer-container" class="viewer-container">
+                <canvas id="three-canvas"></canvas>
+                <!-- Hover Tooltip -->
+                <div id="tooltip" class="tooltip" style="display:none;">
+                    <div class="tooltip-tissue" id="tooltip-tissue">-</div>
+                    <div class="tooltip-region" id="tooltip-region">-</div>
+                    <div class="tooltip-mapped" id="tooltip-mapped" style="display:none;"></div>
+                </div>
+                <!-- Assessment Mode Banner -->
+                <div id="assessment-banner" class="assessment-banner" style="display:none;">
+                    <span>평가 모드 - 관심 부위의 근육을 클릭하세요</span>
+                    <button id="btn-end-assessment" class="btn-sm">평가 종료</button>
+                </div>
+                <!-- Mapping Mode Banner -->
+                <div id="mapping-banner" class="mapping-mode-banner" style="display:none;">
+                    <span class="mapping-banner-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </span>
+                    <span>할당 중: <strong id="mapping-banner-region">-</strong></span>
+                    <span class="mapping-banner-hint">좌클릭: 할당 | 우클릭: 제거</span>
+                    <button id="btn-stop-assign" class="btn-sm">완료</button>
+                </div>
+            </div>
+
+            <!-- Patients View -->
+            <div id="patients-view" class="panel-view" style="display:none;">
+                <div class="panel-header">
+                    <h2>환자 관리</h2>
+                    <button id="btn-new-patient" class="btn-primary">+ 새 환자</button>
+                </div>
+                <div id="patients-list" class="patients-list"></div>
+
+                <!-- Inline Assessments Section -->
+                <div id="patient-assessments-section" class="patient-assessments-section" style="display:none;">
+                    <div class="assessments-header">
+                        <h3 id="assessments-section-title">평가 기록</h3>
+                        <button id="btn-new-assessment" class="btn-primary btn-sm-pad">+ 새 평가</button>
+                    </div>
+                    <div id="assessments-list" class="assessments-list"></div>
+                </div>
+
+                <!-- New Patient Form -->
+                <div id="patient-form" class="patient-form" style="display:none;">
+                    <h3 id="patient-form-title">새 환자 등록</h3>
+                    <div class="form-group">
+                        <label>이름</label>
+                        <input type="text" id="input-patient-name" placeholder="환자 이름">
+                    </div>
+                    <div class="form-group">
+                        <label>생년월일</label>
+                        <input type="date" id="input-patient-dob">
+                    </div>
+                    <div class="form-group">
+                        <label>메모</label>
+                        <textarea id="input-patient-notes" rows="3" placeholder="의뢰 사유, 병력 등..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btn-save-patient" class="btn-primary">저장</button>
+                        <button id="btn-cancel-patient" class="btn-secondary">취소</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mapping Editor (right panel overlaying viewer) -->
+            <div id="mapping-editor" class="mapping-editor" style="display:none;">
+                <div class="mapping-editor-header">
+                    <h3>매핑 에디터</h3>
+                    <button id="btn-export-mapping" class="btn-primary btn-sm-pad">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        JSON 내보내기
+                    </button>
+                </div>
+
+                <!-- Add Region -->
+                <div class="me-section">
+                    <div class="me-section-header">
+                        <span class="section-label" style="padding:0;">부위 목록</span>
+                        <button id="btn-add-region" class="mapping-btn btn-sm-pad">+ 부위 추가</button>
+                    </div>
+                    <!-- New Region Form -->
+                    <div id="new-region-form" class="new-region-form" style="display:none;">
+                        <div class="new-region-row">
+                            <input type="text" id="input-region-name" placeholder="예: glutes, trapezius" class="new-region-input">
+                            <select id="select-region-side" class="new-region-select">
+                                <option value="">양쪽</option>
+                                <option value="_l">좌측 (_l)</option>
+                                <option value="_r">우측 (_r)</option>
+                            </select>
+                        </div>
+                        <div class="new-region-row">
+                            <button id="btn-save-region" class="btn-primary btn-sm-pad" style="flex:1;">생성</button>
+                            <button id="btn-cancel-region" class="btn-secondary btn-sm-pad" style="flex:1;">취소</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Region List -->
+                <div class="me-region-list" id="me-region-list"></div>
+
+                <!-- Selected Region Detail -->
+                <div id="me-region-detail" class="me-region-detail" style="display:none;">
+                    <div class="me-detail-header">
+                        <div>
+                            <div class="me-detail-name" id="me-detail-name">-</div>
+                            <div class="me-detail-meta" id="me-detail-meta">메쉬 0개</div>
+                        </div>
+                        <div class="me-detail-actions">
+                            <button id="btn-start-assign" class="btn-primary btn-sm-pad">메쉬 할당</button>
+                            <button id="btn-delete-region" class="btn-icon btn-danger" title="부위 삭제">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="me-mesh-list" id="me-mesh-list"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Context Panel (Right Side) -->
+        <aside id="context-panel" class="context-panel">
+            <div class="context-header">
+                <h3 id="context-title">선택 상세정보</h3>
+                <button id="btn-close-context" class="btn-icon" title="닫기">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="context-body">
+                <div class="detail-row">
+                    <span class="detail-label">조직 유형</span>
+                    <span class="detail-value" id="detail-tissue">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">신체 부위</span>
+                    <span class="detail-value" id="detail-region">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">좌/우</span>
+                    <span class="detail-value" id="detail-side">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">메쉬 ID</span>
+                    <span class="detail-value detail-mono" id="detail-mesh-id">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">매핑 소스</span>
+                    <span class="detail-value" id="detail-source">-</span>
+                </div>
+
+                <div class="section-label" style="margin-top:16px;">평가</div>
+                <div class="form-group">
+                    <label>심각도</label>
+                    <select id="select-severity">
+                        <option value="">-- 선택 --</option>
+                        <option value="normal">정상</option>
+                        <option value="mild">경도</option>
+                        <option value="moderate">중등도</option>
+                        <option value="severe">중증</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>메모</label>
+                    <textarea id="input-mesh-notes" rows="4" placeholder="관찰 소견, ROM 제한, 통증 정도..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="check-concern">
+                        <span>관심 부위로 표시</span>
+                    </label>
+                </div>
+                <button id="btn-save-selection" class="btn-primary" style="width:100%;margin-top:8px;">메모 저장</button>
+            </div>
+        </aside>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
