@@ -42,12 +42,18 @@ export function setCurrentPatient(id) {
     saveData(data);
 }
 
-export function createPatient(name, dob, notes) {
+export function createPatient(patientData) {
     const patient = {
         id: crypto.randomUUID(),
-        name,
-        dob,
-        notes,
+        name: patientData.name,
+        dob: patientData.dob || '',
+        gender: patientData.gender || '',
+        phone: patientData.phone || '',
+        email: patientData.email || '',
+        diagnosis: patientData.diagnosis || '',
+        medicalHistory: patientData.medicalHistory || '',
+        occupation: patientData.occupation || '',
+        notes: patientData.notes || '',
         createdAt: Date.now(),
         assessments: []
     };
@@ -82,7 +88,8 @@ export function createAssessment(patientId) {
         date: Date.now(),
         selections: [],
         highlightState: [],
-        summary: ''
+        summary: '',
+        overallNotes: ''
     };
     patient.assessments.push(assessment);
     saveData(data);
@@ -130,6 +137,126 @@ export function saveHighlightState(patientId, assessmentId, highlightState) {
     assessment.highlightState = highlightState;
     saveData(data);
     return assessment;
+}
+
+// --- Search & Sort ---
+
+export function searchPatients(query) {
+    if (!query || !query.trim()) return data.patients;
+    const q = query.trim().toLowerCase();
+    return data.patients.filter(p => p.name.toLowerCase().includes(q));
+}
+
+export function sortPatients(patients, sortBy = 'name', ascending = true) {
+    const sorted = [...patients];
+    sorted.sort((a, b) => {
+        let cmp = 0;
+        switch (sortBy) {
+            case 'name':
+                cmp = a.name.localeCompare(b.name, 'ko');
+                break;
+            case 'date':
+                cmp = a.createdAt - b.createdAt;
+                break;
+            case 'assessments':
+                cmp = (a.assessments?.length || 0) - (b.assessments?.length || 0);
+                break;
+        }
+        return ascending ? cmp : -cmp;
+    });
+    return sorted;
+}
+
+// --- Dashboard Stats ---
+
+export function getDashboardStats() {
+    const patients = data.patients;
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const todayEnd = todayStart + 86400000;
+
+    let totalAssessments = 0;
+    let todayAssessments = 0;
+    const severityCounts = { normal: 0, mild: 0, moderate: 0, severe: 0 };
+    const sevenDaysAgo = Date.now() - 7 * 86400000;
+    let recentAssessments = [];
+
+    for (const p of patients) {
+        for (const a of (p.assessments || [])) {
+            totalAssessments++;
+            if (a.date >= todayStart && a.date < todayEnd) todayAssessments++;
+            if (a.date >= sevenDaysAgo) {
+                recentAssessments.push({ ...a, patientName: p.name, patientId: p.id });
+            }
+            for (const s of (a.selections || [])) {
+                if (s.severity && severityCounts.hasOwnProperty(s.severity)) {
+                    severityCounts[s.severity]++;
+                }
+            }
+        }
+    }
+
+    recentAssessments.sort((a, b) => b.date - a.date);
+
+    const recentPatients = [...patients]
+        .filter(p => p.assessments && p.assessments.length > 0)
+        .sort((a, b) => {
+            const lastA = Math.max(...a.assessments.map(x => x.date));
+            const lastB = Math.max(...b.assessments.map(x => x.date));
+            return lastB - lastA;
+        })
+        .slice(0, 5);
+
+    return {
+        totalPatients: patients.length,
+        totalAssessments,
+        todayAssessments,
+        recentAssessments: recentAssessments.slice(0, 10),
+        recentPatients,
+        severityCounts
+    };
+}
+
+// --- Assessment Summary ---
+
+export function generateAssessmentSummary(assessment) {
+    const selections = assessment.selections || [];
+    const counts = { normal: 0, mild: 0, moderate: 0, severe: 0 };
+    const concerns = [];
+
+    for (const s of selections) {
+        if (s.severity && counts.hasOwnProperty(s.severity)) {
+            counts[s.severity]++;
+        }
+        if (s.concern) concerns.push(s.region || s.meshId);
+    }
+
+    const labels = { severe: '중증', moderate: '중등도', mild: '경도', normal: '정상' };
+    const parts = [];
+    for (const [key, label] of Object.entries(labels)) {
+        if (counts[key] > 0) parts.push(`${label} ${counts[key]}`);
+    }
+
+    let summary = parts.length > 0 ? parts.join(', ') : '평가 없음';
+    if (concerns.length > 0) {
+        summary += ` | 관심: ${concerns.slice(0, 3).join(', ')}`;
+    }
+    return summary;
+}
+
+// --- Per-Patient Export ---
+
+export function exportPatientData(patientId) {
+    const patient = getPatient(patientId);
+    if (!patient) return;
+    const blob = new Blob([JSON.stringify(patient, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeName = patient.name.replace(/[^a-zA-Z0-9가-힣]/g, '_');
+    a.download = `postureview-${safeName}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 // --- Mapping Data ---

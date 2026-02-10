@@ -1145,6 +1145,27 @@ input, textarea, select {
 .me-region-list::-webkit-scrollbar { width: 4px; }
 .me-region-list::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 2px; }
 
+.me-group-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 12px 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.me-group-header .me-group-count {
+    font-weight: 400;
+    font-size: 10px;
+    color: var(--text-quaternary);
+    background: var(--bg-tertiary);
+    padding: 1px 6px;
+    border-radius: 8px;
+}
+
 .me-region-item {
     display: flex;
     align-items: center;
@@ -1423,4 +1444,688 @@ input, textarea, select {
 .panel-view::-webkit-scrollbar-thumb {
     background: var(--border-medium);
     border-radius: 2px;
+}
+
+/* ========================================
+   Dashboard
+   ======================================== */
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    padding: 24px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent-primary);
+    letter-spacing: -0.02em;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.dashboard-section {
+    margin-bottom: 32px;
+}
+
+.dashboard-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.severity-bars {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    height: 100px;
+    padding: 0 8px;
+}
+
+.severity-bar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.severity-bar-fill {
+    width: 100%;
+    border-radius: 6px 6px 0 0;
+    min-height: 4px;
+    transition: height 0.3s ease;
+}
+
+.severity-bar-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+}
+
+.severity-bar-count {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.recent-patients-list,
+.recent-assessments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.recent-patient-card,
+.recent-assessment-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 120ms ease;
+}
+
+.recent-patient-card:hover,
+.recent-assessment-card:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+}
+
+.recent-card-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.recent-card-meta {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+}
+
+/* ========================================
+   Patient Toolbar (Search & Sort)
+   ======================================== */
+
+.patient-toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.search-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    transition: border-color 120ms ease;
+}
+
+.search-box:focus-within {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.search-box svg {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+}
+
+.search-box input {
+    border: none;
+    background: none;
+    outline: none;
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-primary);
+    font-family: inherit;
+}
+
+.sort-controls select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    font-size: 13px;
+    color: var(--text-primary);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* ========================================
+   Form Layout
+   ======================================== */
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* ========================================
+   Patient Detail View
+   ======================================== */
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 16px;
+    padding: 4px 0;
+    font-family: inherit;
+    transition: color 120ms ease;
+}
+
+.btn-back:hover {
+    color: var(--accent-primary);
+}
+
+.patient-detail-card {
+    padding: 24px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.patient-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.patient-detail-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.pd-meta {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+}
+
+.pd-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.pd-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 24px;
+}
+
+.pd-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pd-info-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+}
+
+.pd-info-value {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.pd-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.pd-stat-card {
+    padding: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.pd-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+.pd-stat-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+}
+
+/* ========================================
+   Assessment Timeline
+   ======================================== */
+
+.pd-assessments-section .assessments-header {
+    margin-bottom: 16px;
+}
+
+.pd-assessment-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.pd-assessments-timeline {
+    position: relative;
+    padding-left: 24px;
+    border-left: 2px solid var(--border-light);
+}
+
+.pd-timeline-item {
+    position: relative;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    transition: all 120ms ease;
+}
+
+.pd-timeline-item:hover {
+    border-color: var(--accent-primary);
+}
+
+.pd-timeline-item.active {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+}
+
+.pd-timeline-dot {
+    position: absolute;
+    left: -31px;
+    top: 18px;
+    width: 12px;
+    height: 12px;
+    background: var(--accent-primary);
+    border: 2px solid var(--bg-primary);
+    border-radius: 50%;
+}
+
+.pd-timeline-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.pd-timeline-summary {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.pd-timeline-notes {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+    font-style: italic;
+    border-top: 1px solid var(--border-light);
+    padding-top: 6px;
+}
+
+.pd-timeline-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.pd-timeline-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.pd-timeline-actions button {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid var(--border-light);
+    background: white;
+    color: var(--text-secondary);
+    font-family: inherit;
+    transition: all 120ms ease;
+}
+
+.pd-timeline-actions button:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.pd-timeline-actions .btn-danger-sm {
+    color: #C45B4A;
+}
+
+.pd-timeline-actions .btn-danger-sm:hover {
+    background: #FEF2F0;
+    border-color: #C45B4A;
+}
+
+.pd-timeline-check {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+}
+
+.pd-timeline-check input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* ========================================
+   Assessment Comparison
+   ======================================== */
+
+.comparison-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 2px solid var(--border-light);
+}
+
+.comparison-column {
+    padding: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+}
+
+.comparison-header {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.comparison-item {
+    padding: 6px 0;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.comparison-item:last-child {
+    border-bottom: none;
+}
+
+.comparison-improved {
+    color: var(--status-normal);
+    font-weight: 600;
+}
+
+.comparison-worsened {
+    color: var(--status-severe);
+    font-weight: 600;
+}
+
+.comparison-unchanged {
+    color: var(--text-tertiary);
+}
+
+.comparison-new {
+    color: var(--status-mild);
+    font-weight: 600;
+}
+
+.comparison-close {
+    text-align: center;
+    margin-top: 12px;
+}
+
+/* ========================================
+   End Assessment Modal
+   ======================================== */
+
+.end-assessment-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.end-assessment-modal {
+    background: var(--bg-primary);
+    border-radius: 16px;
+    padding: 32px;
+    width: 440px;
+    max-width: 90vw;
+    box-shadow: var(--shadow-lg);
+}
+
+.end-assessment-modal h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+/* ========================================
+   Print Styles
+   ======================================== */
+
+@media print {
+    .sidebar, .context-panel, .sidebar-footer,
+    .btn-back, .pd-actions, .pd-timeline-actions,
+    .pd-timeline-check, .pd-assessment-actions,
+    .patient-toolbar, .btn-primary, .btn-secondary,
+    .assessment-banner, .mapping-mode-banner,
+    .end-assessment-overlay, .comparison-close {
+        display: none !important;
+    }
+    .app { display: block !important; }
+    .main-content { margin: 0; padding: 20px; }
+    .panel-view { position: static !important; overflow: visible !important; }
+    .patient-detail-card, .pd-stat-card, .pd-timeline-item {
+        break-inside: avoid;
+    }
+    body { overflow: visible; height: auto; }
+    .pd-assessments-timeline {
+        border-left-color: #ccc;
+    }
+}
+
+/* ========================================
+   Region Assessment Panel (평가 모드 부위 패널)
+   ======================================== */
+
+.region-assessment-panel {
+    position: absolute;
+    top: 44px;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border-color);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.rap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.rap-header h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.rap-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.rap-group-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 14px 4px;
+    background: var(--bg-primary);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.rap-region-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-light);
+    transition: background 0.15s;
+    cursor: pointer;
+}
+
+.rap-region-item:hover {
+    background: var(--bg-hover);
+}
+
+.rap-region-item.has-severity {
+    background: var(--bg-secondary);
+}
+
+.rap-region-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.rap-region-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rap-region-meta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+}
+
+.rap-severity-select {
+    width: 90px;
+    flex-shrink: 0;
+    padding: 4px 6px;
+    font-size: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.rap-severity-select:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+
+.rap-severity-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.rap-empty {
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 13px;
+}
+
+.rap-summary {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+}
+
+.rap-summary-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.rap-summary-counts {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.rap-summary-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.rap-summary-item .count {
+    font-weight: 600;
 }

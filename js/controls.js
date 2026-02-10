@@ -12,6 +12,9 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let canvas;
 
+// Model center (set from viewer bounds, used for camera presets)
+let modelCenter = new THREE.Vector3();
+
 // Callbacks
 let onMeshClick = null;
 let onMeshHover = null;
@@ -29,6 +32,11 @@ export function initControls(canvasEl, callbacks = {}) {
     onMeshHover = callbacks.onMeshHover || null;
     onMeshRightClick = callbacks.onMeshRightClick || null;
 
+    // Set model center if provided
+    if (callbacks.modelCenter) {
+        modelCenter.copy(callbacks.modelCenter);
+    }
+
     // OrbitControls
     orbitControls = new OrbitControls(camera, canvas);
     orbitControls.enableDamping = true;
@@ -36,7 +44,7 @@ export function initControls(canvasEl, callbacks = {}) {
     orbitControls.screenSpacePanning = true;
     orbitControls.minDistance = 0.3;
     orbitControls.maxDistance = 10;
-    orbitControls.target.set(0, 0, 0);
+    orbitControls.target.copy(modelCenter);
     orbitControls.update();
 
     // Event listeners
@@ -153,7 +161,7 @@ export function animateCameraTo(position, target, duration = 800) {
         startPos: camera.position.clone(),
         endPos: new THREE.Vector3(...position),
         startTarget: orbitControls.target.clone(),
-        endTarget: new THREE.Vector3(...(target || [0, 0, 0])),
+        endTarget: target ? new THREE.Vector3(...target) : modelCenter.clone(),
         startTime: Date.now(),
         duration
     };
@@ -164,26 +172,27 @@ export function animateCameraTo(position, target, duration = 800) {
  */
 export function setCameraPreset(preset) {
     const dist = 2.5;
-    const target = [0, 0, 0];
+    const cx = modelCenter.x, cy = modelCenter.y, cz = modelCenter.z;
+    const target = [cx, cy, cz];
 
     switch (preset) {
         case 'front':
-            animateCameraTo([0, 0.3, dist], target);
+            animateCameraTo([cx, cy + 0.3, cz + dist], target);
             break;
         case 'back':
-            animateCameraTo([0, 0.3, -dist], target);
+            animateCameraTo([cx, cy + 0.3, cz - dist], target);
             break;
         case 'left':
-            animateCameraTo([-dist, 0.3, 0], target);
+            animateCameraTo([cx - dist, cy + 0.3, cz], target);
             break;
         case 'right':
-            animateCameraTo([dist, 0.3, 0], target);
+            animateCameraTo([cx + dist, cy + 0.3, cz], target);
             break;
         case 'top':
-            animateCameraTo([0, dist, 0.01], target);
+            animateCameraTo([cx, cy + dist, cz + 0.01], target);
             break;
         case 'reset':
-            animateCameraTo([0, 0.5, dist * 1.2], target);
+            animateCameraTo([cx, cy + 0.5, cz + dist * 1.2], target);
             break;
     }
 }

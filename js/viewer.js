@@ -3,14 +3,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { computeRegions } from './regions.js';
-import { setSceneRoot } from './highlights.js';
+import { setSceneRoot, initVertexColors } from './highlights.js';
 
-const MODELS = {
-    original: { path: './OriginalMuscular002.glb', label: '원본 (고해상도)', size: 161311360 },
-    rigging:  { path: './RiggingModel.glb',        label: '리깅용 (경량)',    size: 42000000 },
-};
-
-let currentModelKey = 'original';
+const MODEL_PATH = './RiggingModel.glb';
+const MODEL_SIZE = 42056484;
 
 export let scene, camera, renderer, modelRoot;
 let animationId;
@@ -91,32 +87,12 @@ export function initScene(canvas) {
 
 /**
  * Load a GLB model with progress tracking
- * @param {string|Function} modelKeyOrProgress - model key ('original'|'rigging') or onProgress callback (defaults to 'original')
  */
-export function loadModel(modelKeyOrProgress, onProgressOrComplete, onCompleteOrError, onErrorOpt) {
-    // Support both signatures:
-    //   loadModel(onProgress, onComplete, onError)          — legacy
-    //   loadModel(modelKey, onProgress, onComplete, onError) — new
-    let modelKey, onProgress, onComplete, onError;
-    if (typeof modelKeyOrProgress === 'string') {
-        modelKey = modelKeyOrProgress;
-        onProgress = onProgressOrComplete;
-        onComplete = onCompleteOrError;
-        onError = onErrorOpt;
-    } else {
-        modelKey = 'original';
-        onProgress = modelKeyOrProgress;
-        onComplete = onProgressOrComplete;
-        onError = onCompleteOrError;
-    }
-
-    const model = MODELS[modelKey] || MODELS.original;
-    currentModelKey = modelKey;
-
+export function loadModel(onProgress, onComplete, onError) {
     const loader = new GLTFLoader();
 
     loader.load(
-        model.path,
+        MODEL_PATH,
         // onLoad
         (gltf) => {
             // Remove previous model if exists
@@ -127,25 +103,44 @@ export function loadModel(modelKeyOrProgress, onProgressOrComplete, onCompleteOr
 
             modelRoot = gltf.scene;
 
-            // Clone materials so each mesh has independent material (for per-mesh highlighting)
+            // Clone materials and init vertex colors (for per-vertex region coloring)
+            // First pass: find muscle color
+            let muscleColor = null;
+            modelRoot.traverse((child) => {
+                if (child.isMesh && !muscleColor) {
+                    const matName = child.material.name || '';
+                    if (matName.startsWith('Muscles') && child.material.color) {
+                        muscleColor = child.material.color.clone();
+                    }
+                }
+            });
+
+            // Second pass: clone materials, set tendon color = muscle color
             modelRoot.traverse((child) => {
                 if (child.isMesh) {
                     child.material = child.material.clone();
                     child.userData.tissueType = child.material.name;
                     child.material.side = THREE.DoubleSide;
+
+                    // Make tendon & joint capsule color match muscle color
+                    const matName = child.material.name || '';
+                    if (muscleColor && (matName.startsWith('Tendon') || matName.startsWith('Articular_capsule'))) {
+                        child.material.color.copy(muscleColor);
+                    }
+
+                    initVertexColors(child);
                 }
             });
 
-            // Auto-center the model
+            // Compute model bounds (do NOT move model - keep original coordinates for mapping)
             const box = new THREE.Box3().setFromObject(modelRoot);
             const center = box.getCenter(new THREE.Vector3());
             const size = box.getSize(new THREE.Vector3());
-            modelRoot.position.sub(center);
 
-            // Adjust camera to fit model
+            // Position camera relative to model center (like anatomy-viewer-v2)
             const maxDim = Math.max(size.x, size.y, size.z);
-            camera.position.set(0, size.y * 0.3, maxDim * 1.5);
-            camera.lookAt(0, 0, 0);
+            camera.position.set(center.x + maxDim * 0.6, center.y + maxDim * 0.4, center.z + maxDim * 0.8);
+            camera.lookAt(center);
 
             scene.add(modelRoot);
 
@@ -162,7 +157,7 @@ export function loadModel(modelKeyOrProgress, onProgressOrComplete, onCompleteOr
         },
         // onProgress
         (xhr) => {
-            const total = xhr.total > 0 ? xhr.total : model.size;
+            const total = xhr.total > 0 ? xhr.total : MODEL_SIZE;
             const percent = Math.min((xhr.loaded / total) * 100, 100);
             const mbLoaded = (xhr.loaded / (1024 * 1024)).toFixed(1);
             const mbTotal = (total / (1024 * 1024)).toFixed(0);
@@ -174,20 +169,6 @@ export function loadModel(modelKeyOrProgress, onProgressOrComplete, onCompleteOr
             if (onError) onError(error);
         }
     );
-}
-
-/**
- * Get available model list
- */
-export function getModelList() {
-    return Object.entries(MODELS).map(([key, m]) => ({ key, label: m.label }));
-}
-
-/**
- * Get current model key
- */
-export function getCurrentModelKey() {
-    return currentModelKey;
 }
 
 /**

@@ -2,57 +2,70 @@
 
 import * as THREE from 'three';
 
-// Body region definitions by Y-axis range (fallback when no mapping loaded)
-const REGION_DEFS = [
-    { id: 'head',       label: 'Head',                    yMin: 0.88, yMax: 1.0  },
-    { id: 'neck',       label: 'Cervical (Neck)',         yMin: 0.82, yMax: 0.88 },
-    { id: 'shoulder',   label: 'Shoulders / Deltoids',    yMin: 0.75, yMax: 0.85 },
-    { id: 'upperBack',  label: 'Thoracic (Upper Back)',   yMin: 0.65, yMax: 0.82 },
-    { id: 'chest',      label: 'Chest / Pectorals',      yMin: 0.65, yMax: 0.80 },
-    { id: 'upperArm',   label: 'Upper Arms',             yMin: 0.55, yMax: 0.75 },
-    { id: 'lowerBack',  label: 'Lumbar (Lower Back)',     yMin: 0.50, yMax: 0.65 },
-    { id: 'abdomen',    label: 'Abdomen',                 yMin: 0.48, yMax: 0.60 },
-    { id: 'forearm',    label: 'Forearms',                yMin: 0.35, yMax: 0.55 },
-    { id: 'hip',        label: 'Hip / Pelvis',            yMin: 0.42, yMax: 0.52 },
-    { id: 'hand',       label: 'Hands / Wrists',         yMin: 0.22, yMax: 0.38 },
-    { id: 'upperLeg',   label: 'Upper Legs',             yMin: 0.25, yMax: 0.45 },
-    { id: 'knee',       label: 'Knee',                    yMin: 0.20, yMax: 0.28 },
-    { id: 'lowerLeg',   label: 'Lower Legs (Calves)',    yMin: 0.07, yMax: 0.22 },
-    { id: 'foot',       label: 'Feet / Ankles',          yMin: 0.00, yMax: 0.08 },
+// ═══ REGIONS (좌/우 분리) - anatomy-viewer-v2.html과 동일 ═══
+export const PREDEFINED_REGIONS = [
+    { id: 'head_l',       name: '머리 (좌)',     side: 'l' },
+    { id: 'head_r',       name: '머리 (우)',     side: 'r' },
+    { id: 'neck_l',       name: '목 (좌)',       side: 'l' },
+    { id: 'neck_r',       name: '목 (우)',       side: 'r' },
+    { id: 'shoulder_l',   name: '왼쪽 어깨',     side: 'l' },
+    { id: 'shoulder_r',   name: '오른쪽 어깨',   side: 'r' },
+    { id: 'chest_l',      name: '가슴 (좌)',     side: 'l' },
+    { id: 'chest_r',      name: '가슴 (우)',     side: 'r' },
+    { id: 'upper_back_l', name: '상부 등 (좌)',  side: 'l' },
+    { id: 'upper_back_r', name: '상부 등 (우)',  side: 'r' },
+    { id: 'lower_back_l', name: '허리 (좌)',     side: 'l' },
+    { id: 'lower_back_r', name: '허리 (우)',     side: 'r' },
+    { id: 'abdomen_l',    name: '복부 (좌)',     side: 'l' },
+    { id: 'abdomen_r',    name: '복부 (우)',     side: 'r' },
+    { id: 'arm_l',        name: '왼팔',          side: 'l' },
+    { id: 'arm_r',        name: '오른팔',        side: 'r' },
+    { id: 'hip_l',        name: '골반 (좌)',     side: 'l' },
+    { id: 'hip_r',        name: '골반 (우)',     side: 'r' },
+    { id: 'thigh_l',      name: '왼대퇴',        side: 'l' },
+    { id: 'thigh_r',      name: '오른대퇴',      side: 'r' },
+    { id: 'shin_l',       name: '왼종아리',      side: 'l' },
+    { id: 'shin_r',       name: '오른종아리',    side: 'r' },
+    { id: 'foot_l',       name: '왼발',          side: 'l' },
+    { id: 'foot_r',       name: '오른발',        side: 'r' },
 ];
 
-// Readable labels for mapping region keys (e.g. "neck_l" -> "Neck (Left)")
-const REGION_LABEL_MAP = {
-    'neck_l':       'Neck (Left)',
-    'neck_r':       'Neck (Right)',
-    'shoulder_l':   'Shoulder (Left)',
-    'shoulder_r':   'Shoulder (Right)',
-    'chest_l':      'Chest (Left)',
-    'chest_r':      'Chest (Right)',
-    'upper_back_l': 'Upper Back (Left)',
-    'upper_back_r': 'Upper Back (Right)',
-    'lower_back_l': 'Lower Back (Left)',
-    'lower_back_r': 'Lower Back (Right)',
-    'abdomen_l':    'Abdomen (Left)',
-    'abdomen_r':    'Abdomen (Right)',
-    'hip_l':        'Hip (Left)',
-    'hip_r':        'Hip (Right)',
-    'thigh_l':      'Thigh (Left)',
-    'thigh_r':      'Thigh (Right)',
-    'knee_l':       'Knee (Left)',
-    'knee_r':       'Knee (Right)',
-    'calf_l':       'Calf (Left)',
-    'calf_r':       'Calf (Right)',
-    'foot_l':       'Foot (Left)',
-    'foot_r':       'Foot (Right)',
-    'upper_arm_l':  'Upper Arm (Left)',
-    'upper_arm_r':  'Upper Arm (Right)',
-    'forearm_l':    'Forearm (Left)',
-    'forearm_r':    'Forearm (Right)',
-    'hand_l':       'Hand (Left)',
-    'hand_r':       'Hand (Right)',
-    'head':         'Head',
-};
+export const REGION_GROUPS = [
+    { name: '머리',    ids: ['head_l',       'head_r'] },
+    { name: '목',      ids: ['neck_l',       'neck_r'] },
+    { name: '어깨',    ids: ['shoulder_l',   'shoulder_r'] },
+    { name: '가슴',    ids: ['chest_l',      'chest_r'] },
+    { name: '상부 등', ids: ['upper_back_l', 'upper_back_r'] },
+    { name: '허리',    ids: ['lower_back_l', 'lower_back_r'] },
+    { name: '복부',    ids: ['abdomen_l',    'abdomen_r'] },
+    { name: '팔',      ids: ['arm_l',        'arm_r'] },
+    { name: '골반',    ids: ['hip_l',        'hip_r'] },
+    { name: '대퇴',    ids: ['thigh_l',      'thigh_r'] },
+    { name: '종아리',  ids: ['shin_l',       'shin_r'] },
+    { name: '발',      ids: ['foot_l',       'foot_r'] },
+];
+
+// Build label map from predefined regions
+const REGION_LABEL_MAP = {};
+for (const r of PREDEFINED_REGIONS) {
+    REGION_LABEL_MAP[r.id] = r.name;
+}
+
+// Body region definitions by Y-axis range (fallback when no mapping loaded)
+const REGION_DEFS = [
+    { id: 'head',       label: '머리',              yMin: 0.88, yMax: 1.0  },
+    { id: 'neck',       label: '목',                yMin: 0.82, yMax: 0.88 },
+    { id: 'shoulder',   label: '어깨',              yMin: 0.75, yMax: 0.85 },
+    { id: 'upperBack',  label: '상부 등',           yMin: 0.65, yMax: 0.82 },
+    { id: 'chest',      label: '가슴',              yMin: 0.65, yMax: 0.80 },
+    { id: 'arm',        label: '팔',                yMin: 0.35, yMax: 0.75 },
+    { id: 'lowerBack',  label: '허리',              yMin: 0.50, yMax: 0.65 },
+    { id: 'abdomen',    label: '복부',              yMin: 0.48, yMax: 0.60 },
+    { id: 'hip',        label: '골반',              yMin: 0.42, yMax: 0.52 },
+    { id: 'thigh',      label: '대퇴',              yMin: 0.25, yMax: 0.45 },
+    { id: 'shin',       label: '종아리',            yMin: 0.07, yMax: 0.25 },
+    { id: 'foot',       label: '발',                yMin: 0.00, yMax: 0.08 },
+];
 
 // Tissue type display names
 export const TISSUE_NAMES = {
@@ -84,6 +97,10 @@ const mappingByMeshName = new Map();
 
 // Current loaded mapping metadata
 let currentMapping = null;
+
+// Tracks which meshNames actually passed bounds filtering per region
+// regionKey -> Set of meshNames
+const effectiveMeshes = new Map();
 
 /**
  * Compute bounding box for entire model and classify each mesh
@@ -225,28 +242,16 @@ function regionKeyToSide(key) {
  * @returns {{ regionCount, meshCount }} stats
  */
 export function loadMapping(mappingJson) {
-    mappingByMeshName.clear();
-
     currentMapping = mappingJson;
-    let regionCount = 0;
-    let meshCount = 0;
 
-    if (mappingJson && mappingJson.regions) {
-        for (const [regionKey, regionData] of Object.entries(mappingJson.regions)) {
-            regionCount++;
-            const label = regionKeyToLabel(regionKey);
-            const side = regionKeyToSide(regionKey);
-
-            if (regionData.meshes && Array.isArray(regionData.meshes)) {
-                for (const meshName of regionData.meshes) {
-                    meshCount++;
-                    mappingByMeshName.set(meshName, {
-                        regionId: regionKey,
-                        regionLabel: label,
-                        side: side,
-                        state: regionData.state || 'normal'
-                    });
-                }
+    // Ensure all predefined regions exist in the mapping
+    if (currentMapping && currentMapping.regions) {
+        for (const r of PREDEFINED_REGIONS) {
+            if (!currentMapping.regions[r.id]) {
+                currentMapping.regions[r.id] = {
+                    meshes: [], state: 'normal',
+                    xMin: null, xMax: null, yMin: null, yMax: null
+                };
             }
         }
     }
@@ -256,31 +261,97 @@ export function loadMapping(mappingJson) {
         applyMappingToModel();
     }
 
+    const regionCount = currentMapping?.regions ? Object.keys(currentMapping.regions).length : 0;
+    let meshCount = 0;
+    for (const s of effectiveMeshes.values()) meshCount += s.size;
     return { regionCount, meshCount };
 }
 
 /**
- * Apply loaded mapping over existing bounding-box regions
+ * Apply loaded mapping over existing bounding-box regions.
+ * Matching anatomy-viewer-v2.html behavior:
+ *   - Meshes are assigned to regions by NAME (meshes array).
+ *   - ALL listed meshes count as "effective" for the region (mesh count display).
+ *   - xMin/xMax/yMin/yMax bounds are stored for vertex-level coloring only,
+ *     NOT used for mesh registration filtering.
+ *   - Side filtering (_l → x>=0, _r → x<0) is used only when choosing
+ *     which single region "owns" a shared mesh for click identification.
  */
 function applyMappingToModel() {
     if (!cachedModelRoot) return;
 
+    // Clear previous mapping state
+    mappingByMeshName.clear();
+    effectiveMeshes.clear();
+
+    if (!currentMapping || !currentMapping.regions) return;
+
+    // Build mesh name → mesh object + world-space center lookup
+    const meshLookup = new Map(); // meshName → { child, center, uuid }
     cachedModelRoot.traverse((child) => {
-        if (!child.isMesh) return;
-        const meshName = child.name;
-        if (meshName && mappingByMeshName.has(meshName)) {
-            const mapped = mappingByMeshName.get(meshName);
-            const existing = meshRegions.get(child.uuid);
-            meshRegions.set(child.uuid, {
-                ...existing,
-                regionId: mapped.regionId,
-                regionLabel: mapped.regionLabel,
-                side: mapped.side,
-                state: mapped.state,
-                source: 'mapping'
-            });
+        if (!child.isMesh || !child.name) return;
+        const existing = meshRegions.get(child.uuid);
+        let center = existing?.center || null;
+        if (!center) {
+            const box = new THREE.Box3().setFromObject(child);
+            center = box.getCenter(new THREE.Vector3());
         }
+        meshLookup.set(child.name, {
+            child,
+            center,
+            uuid: child.uuid
+        });
     });
+
+    // Iterate all regions, assign meshes by name
+    // (anatomy-viewer-v2.html style: all listed meshes belong to the region)
+    for (const [regionKey, regionData] of Object.entries(currentMapping.regions)) {
+        const meshes = regionData.meshes || [];
+        const label = regionKeyToLabel(regionKey);
+        const side = regionKeyToSide(regionKey);
+
+        // Side key for click-ownership disambiguation
+        const sideKey = regionKey.endsWith('_l') ? 'l' : regionKey.endsWith('_r') ? 'r' : null;
+
+        for (const meshName of meshes) {
+            const info = meshLookup.get(meshName);
+            if (!info) continue;
+
+            // Track ALL listed meshes as effective (for mesh count display)
+            if (!effectiveMeshes.has(regionKey)) {
+                effectiveMeshes.set(regionKey, new Set());
+            }
+            effectiveMeshes.get(regionKey).add(meshName);
+
+            // For mappingByMeshName (single-owner click identification):
+            // Use side filtering to pick the correct L/R region for shared meshes
+            const cx = info.center ? info.center.x : 0;
+            if (sideKey === 'l' && cx < 0) continue;
+            if (sideKey === 'r' && cx >= 0) continue;
+
+            const mappedData = {
+                regionId: regionKey,
+                regionLabel: label,
+                side: side,
+                state: regionData.state || 'normal'
+            };
+
+            mappingByMeshName.set(meshName, mappedData);
+
+            // Update meshRegions
+            const existing = meshRegions.get(info.uuid);
+            if (existing) {
+                meshRegions.set(info.uuid, {
+                    ...existing,
+                    regionId: regionKey,
+                    regionLabel: label,
+                    side: side,
+                    state: regionData.state || 'normal',
+                    source: 'mapping'
+                });
+            }
+        }
+    }
 }
 
 /**
@@ -288,6 +359,7 @@ function applyMappingToModel() {
  */
 export function clearMapping() {
     mappingByMeshName.clear();
+    effectiveMeshes.clear();
     currentMapping = null;
 
     // Recompute pure bounding-box regions
@@ -301,17 +373,27 @@ export function clearMapping() {
  */
 export function getMappingInfo() {
     if (!currentMapping) return null;
+
+    let totalEffective = 0;
+    const regions = currentMapping.regions ? Object.keys(currentMapping.regions).map(key => {
+        const effective = effectiveMeshes.get(key);
+        const effCount = effective ? effective.size : 0;
+        totalEffective += effCount;
+        return {
+            id: key,
+            label: regionKeyToLabel(key),
+            meshCount: effCount,
+            totalMeshCount: currentMapping.regions[key].meshes?.length || 0,
+            state: currentMapping.regions[key].state || 'normal'
+        };
+    }) : [];
+
     return {
         version: currentMapping.version || '-',
         timestamp: currentMapping.timestamp || null,
-        regionCount: currentMapping.regions ? Object.keys(currentMapping.regions).length : 0,
-        meshCount: mappingByMeshName.size,
-        regions: currentMapping.regions ? Object.keys(currentMapping.regions).map(key => ({
-            id: key,
-            label: regionKeyToLabel(key),
-            meshCount: currentMapping.regions[key].meshes?.length || 0,
-            state: currentMapping.regions[key].state || 'normal'
-        })) : []
+        regionCount: regions.length,
+        meshCount: totalEffective,
+        regions
     };
 }
 
@@ -349,6 +431,16 @@ export function ensureMapping() {
             timestamp: new Date().toISOString(),
             regions: {}
         };
+    }
+    // Ensure all predefined regions exist
+    for (const r of PREDEFINED_REGIONS) {
+        if (!currentMapping.regions[r.id]) {
+            currentMapping.regions[r.id] = {
+                meshes: [],
+                state: 'normal',
+                xMin: null, xMax: null, yMin: null, yMax: null
+            };
+        }
     }
     return currentMapping;
 }
@@ -483,15 +575,51 @@ export function getMeshRegionKey(meshName) {
 }
 
 /**
- * Get all region keys with labels
+ * Get mesh names belonging to a region (filtered by bounds)
+ */
+export function getRegionMeshNames(regionKey) {
+    // Return only meshes that passed bounds filtering during applyMappingToModel
+    const effective = effectiveMeshes.get(regionKey);
+    return effective ? [...effective] : [];
+}
+
+/**
+ * Get all region keys with labels (predefined regions first, in order)
  */
 export function getAllRegionKeysWithLabels() {
     if (!currentMapping || !currentMapping.regions) return [];
-    return Object.keys(currentMapping.regions).map(key => ({
-        key,
-        label: regionKeyToLabel(key),
-        meshCount: currentMapping.regions[key].meshes?.length || 0
-    }));
+
+    const result = [];
+    const seen = new Set();
+
+    // Predefined regions first (in v2 order)
+    for (const r of PREDEFINED_REGIONS) {
+        if (currentMapping.regions[r.id]) {
+            const effective = effectiveMeshes.get(r.id);
+            result.push({
+                key: r.id,
+                label: r.name,
+                side: r.side,
+                meshCount: effective ? effective.size : 0
+            });
+            seen.add(r.id);
+        }
+    }
+
+    // Any custom regions not in predefined list
+    for (const key of Object.keys(currentMapping.regions)) {
+        if (!seen.has(key)) {
+            const effective = effectiveMeshes.get(key);
+            result.push({
+                key,
+                label: regionKeyToLabel(key),
+                side: regionKeyToSide(key),
+                meshCount: effective ? effective.size : 0
+            });
+        }
+    }
+
+    return result;
 }
 
 /**

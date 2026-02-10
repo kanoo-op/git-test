@@ -5,7 +5,7 @@ import { initControls } from './controls.js';
 import { initSidebar } from './sidebar.js';
 import { initPanels, switchView, openContextPanel, closeContextPanel, isMappingAssignMode, handleMappingAssign, handleMappingRemove } from './panels.js';
 import { selectMesh, deselectCurrentMesh, getSelectedMesh } from './highlights.js';
-import { exportAllData } from './storage.js';
+import { exportAllData, clearMappingData } from './storage.js';
 
 // DOM references
 const loadingOverlay = document.getElementById('loading-overlay');
@@ -19,6 +19,12 @@ const tooltipTissue = document.getElementById('tooltip-tissue');
 const tooltipRegion = document.getElementById('tooltip-region');
 const tooltipMapped = document.getElementById('tooltip-mapped');
 const canvas = document.getElementById('three-canvas');
+
+// One-time: clear old mapping cache so default mapping_Final.json loads with v2 region structure
+if (!localStorage.getItem('_mapping_migrated_v2')) {
+    clearMappingData();
+    localStorage.setItem('_mapping_migrated_v2', 'true');
+}
 
 // Check for file:// protocol
 if (window.location.protocol === 'file:') {
@@ -45,11 +51,12 @@ loadModel(
         // Start render loop
         startRenderLoop();
 
-        // Initialize controls
+        // Initialize controls (pass model center so camera targets it, not origin)
         initControls(canvas, {
             onMeshClick: handleMeshClick,
             onMeshHover: handleMeshHover,
-            onMeshRightClick: handleMeshRightClick
+            onMeshRightClick: handleMeshRightClick,
+            modelCenter: bounds.center
         });
 
         // Initialize UI
@@ -59,6 +66,9 @@ loadModel(
         });
 
         initPanels();
+
+        // Default view: dashboard
+        switchView('dashboard');
 
         // Remove loading overlay from DOM after animation
         setTimeout(() => {

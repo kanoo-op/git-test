@@ -4,7 +4,6 @@ import { setTissueVisible, setTissueOpacity, clearAllHighlights } from './highli
 import { setCameraPreset } from './controls.js';
 import { loadMapping, clearMapping, getMappingInfo, hasMappingLoaded } from './regions.js';
 import { saveMapping, getMapping, clearMappingData } from './storage.js';
-import { loadModel, getCurrentModelKey } from './viewer.js';
 
 /**
  * Initialize sidebar interactions
@@ -50,9 +49,6 @@ export function initSidebar(callbacks = {}) {
         exportBtn.addEventListener('click', callbacks.onExport);
     }
 
-    // --- Model selector ---
-    initModelSelector();
-
     // --- Mapping ---
     initMappingUI();
 }
@@ -70,7 +66,10 @@ export function updatePatientCard(patient) {
         nameEl.textContent = patient.name;
         const age = patient.dob ? calculateAge(patient.dob) : '-';
         const assessCount = patient.assessments ? patient.assessments.length : 0;
-        metaEl.textContent = `나이: ${age} | 평가: ${assessCount}건`;
+        const diagnosis = patient.diagnosis || '';
+        metaEl.textContent = diagnosis
+            ? `나이: ${age} | ${diagnosis} | 평가: ${assessCount}건`
+            : `나이: ${age} | 평가: ${assessCount}건`;
     } else {
         card.style.display = 'none';
     }
@@ -85,49 +84,6 @@ function calculateAge(dob) {
         age--;
     }
     return age;
-}
-
-// ======== Model Selector ========
-
-function initModelSelector() {
-    const select = document.getElementById('select-model');
-    const loadingBar = document.getElementById('model-loading-bar');
-    const loadingFill = document.getElementById('model-loading-fill');
-
-    select.value = getCurrentModelKey();
-
-    select.addEventListener('change', () => {
-        const key = select.value;
-        if (key === getCurrentModelKey()) return;
-
-        // Show loading bar
-        loadingBar.style.display = 'block';
-        loadingFill.style.width = '0%';
-        select.disabled = true;
-
-        clearAllHighlights();
-
-        loadModel(
-            key,
-            // onProgress
-            (percent) => {
-                loadingFill.style.width = percent + '%';
-            },
-            // onComplete
-            () => {
-                loadingBar.style.display = 'none';
-                loadingFill.style.width = '0%';
-                select.disabled = false;
-            },
-            // onError
-            (err) => {
-                loadingBar.style.display = 'none';
-                select.disabled = false;
-                select.value = getCurrentModelKey();
-                alert('모델 로딩 실패: ' + (err.message || err));
-            }
-        );
-    });
 }
 
 // ======== Mapping UI ========
@@ -172,10 +128,31 @@ function initMappingUI() {
         renderMappingStatus();
     });
 
-    // Restore saved mapping on init
+    // Restore saved mapping on init, or load default
     const savedMapping = getMapping();
     if (savedMapping) {
         loadMapping(savedMapping);
+        renderMappingStatus();
+    } else {
+        // Load default mapping file
+        loadDefaultMapping();
+    }
+}
+
+/**
+ * Load default mapping from mapping_Final.json
+ */
+async function loadDefaultMapping() {
+    try {
+        const res = await fetch('./mapping_Final.json');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (json.regions) {
+            loadMapping(json);
+            saveMapping(json);
+        }
+    } catch (err) {
+        console.warn('기본 매핑 로드 실패:', err);
     }
     renderMappingStatus();
 }

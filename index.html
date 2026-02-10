@@ -63,21 +63,13 @@
                 </div>
             </div>
 
-            <!-- Model Selector -->
-            <div class="sidebar-section" id="model-selector-section">
-                <div class="section-label">모델 선택</div>
-                <select id="select-model" class="model-select">
-                    <option value="original">원본 (고해상도)</option>
-                    <option value="rigging">리깅용 (경량)</option>
-                </select>
-                <div id="model-loading-bar" class="model-loading-bar" style="display:none;">
-                    <div id="model-loading-fill" class="model-loading-fill"></div>
-                </div>
-            </div>
-
             <nav class="sidebar-nav">
                 <div class="section-label">메뉴</div>
-                <button class="nav-item active" data-view="viewer">
+                <button class="nav-item active" data-view="dashboard">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <span>대시보드</span>
+                </button>
+                <button class="nav-item" data-view="viewer">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     <span>3D 뷰어</span>
                 </button>
@@ -117,7 +109,7 @@
                 </label>
                 <label class="tissue-toggle">
                     <input type="checkbox" checked data-tissue="Tendon.001">
-                    <span class="tissue-swatch" style="background:#857D9E;"></span>
+                    <span class="tissue-swatch" style="background:#F24D2E;"></span>
                     <span>힘줄</span>
                     <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Tendon.001">
                 </label>
@@ -135,7 +127,7 @@
                 </label>
                 <label class="tissue-toggle">
                     <input type="checkbox" checked data-tissue="Articular_capsule.002">
-                    <span class="tissue-swatch" style="background:#8F75CC;"></span>
+                    <span class="tissue-swatch" style="background:#F24D2E;"></span>
                     <span>관절낭</span>
                     <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Articular_capsule.002">
                 </label>
@@ -198,8 +190,26 @@
                 </div>
                 <!-- Assessment Mode Banner -->
                 <div id="assessment-banner" class="assessment-banner" style="display:none;">
-                    <span>평가 모드 - 관심 부위의 근육을 클릭하세요</span>
+                    <span>평가 모드 - 부위를 선택하거나 근육을 직접 클릭하세요</span>
+                    <button id="btn-toggle-region-panel" class="btn-sm" style="margin-right:4px;">부위 목록</button>
                     <button id="btn-end-assessment" class="btn-sm">평가 종료</button>
+                </div>
+                <!-- Region Assessment Panel -->
+                <div id="region-assessment-panel" class="region-assessment-panel" style="display:none;">
+                    <div class="rap-header">
+                        <h4>매핑 부위 평가</h4>
+                        <div style="display:flex;gap:4px;align-items:center;">
+                            <button id="btn-load-mapping-rap" class="btn-sm" title="매핑 파일 불러오기">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                불러오기
+                            </button>
+                            <button id="btn-close-region-panel" class="btn-icon" title="닫기">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="file" id="input-mapping-rap-file" accept=".json" style="display:none;">
+                    <div id="region-assessment-list" class="rap-list"></div>
                 </div>
                 <!-- Mapping Mode Banner -->
                 <div id="mapping-banner" class="mapping-mode-banner" style="display:none;">
@@ -212,37 +222,111 @@
                 </div>
             </div>
 
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="panel-view" style="display:none;">
+                <div class="panel-header">
+                    <h2>대시보드</h2>
+                </div>
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total-patients">0</div>
+                        <div class="stat-label">전체 환자</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total-assessments">0</div>
+                        <div class="stat-label">전체 평가</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-today-assessments">0</div>
+                        <div class="stat-label">오늘 평가</div>
+                    </div>
+                </div>
+                <div class="dashboard-section">
+                    <h3 class="dashboard-section-title">심각도 분포</h3>
+                    <div class="severity-bars" id="severity-distribution"></div>
+                </div>
+                <div class="dashboard-section">
+                    <h3 class="dashboard-section-title">최근 환자</h3>
+                    <div class="recent-patients-list" id="recent-patients-list"></div>
+                </div>
+                <div class="dashboard-section">
+                    <h3 class="dashboard-section-title">최근 평가</h3>
+                    <div class="recent-assessments-list" id="recent-assessments-list"></div>
+                </div>
+            </div>
+
             <!-- Patients View -->
             <div id="patients-view" class="panel-view" style="display:none;">
                 <div class="panel-header">
                     <h2>환자 관리</h2>
                     <button id="btn-new-patient" class="btn-primary">+ 새 환자</button>
                 </div>
+                <div class="patient-toolbar">
+                    <div class="search-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="input-patient-search" placeholder="이름으로 검색...">
+                    </div>
+                    <div class="sort-controls">
+                        <select id="select-patient-sort">
+                            <option value="name-asc">이름 (ㄱ-ㅎ)</option>
+                            <option value="name-desc">이름 (ㅎ-ㄱ)</option>
+                            <option value="date-desc">최근 등록순</option>
+                            <option value="date-asc">오래된 순</option>
+                            <option value="assessments-desc">평가 많은 순</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="patients-list" class="patients-list"></div>
 
-                <!-- Inline Assessments Section -->
-                <div id="patient-assessments-section" class="patient-assessments-section" style="display:none;">
-                    <div class="assessments-header">
-                        <h3 id="assessments-section-title">평가 기록</h3>
-                        <button id="btn-new-assessment" class="btn-primary btn-sm-pad">+ 새 평가</button>
-                    </div>
-                    <div id="assessments-list" class="assessments-list"></div>
-                </div>
-
-                <!-- New Patient Form -->
+                <!-- Patient Form -->
                 <div id="patient-form" class="patient-form" style="display:none;">
                     <h3 id="patient-form-title">새 환자 등록</h3>
-                    <div class="form-group">
-                        <label>이름</label>
-                        <input type="text" id="input-patient-name" placeholder="환자 이름">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>이름 *</label>
+                            <input type="text" id="input-patient-name" placeholder="환자 이름">
+                        </div>
+                        <div class="form-group">
+                            <label>생년월일</label>
+                            <input type="date" id="input-patient-dob">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>성별</label>
+                            <select id="select-patient-gender">
+                                <option value="">-- 선택 --</option>
+                                <option value="male">남성</option>
+                                <option value="female">여성</option>
+                                <option value="other">기타</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>직업</label>
+                            <input type="text" id="input-patient-occupation" placeholder="직업">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>전화번호</label>
+                            <input type="tel" id="input-patient-phone" placeholder="010-0000-0000">
+                        </div>
+                        <div class="form-group">
+                            <label>이메일</label>
+                            <input type="email" id="input-patient-email" placeholder="email@example.com">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>생년월일</label>
-                        <input type="date" id="input-patient-dob">
+                        <label>주요 호소 / 진단</label>
+                        <input type="text" id="input-patient-diagnosis" placeholder="예: 만성 요통, 경추 디스크 등">
+                    </div>
+                    <div class="form-group">
+                        <label>병력</label>
+                        <textarea id="input-patient-history" rows="2" placeholder="과거 병력, 수술 이력 등..."></textarea>
                     </div>
                     <div class="form-group">
                         <label>메모</label>
-                        <textarea id="input-patient-notes" rows="3" placeholder="의뢰 사유, 병력 등..."></textarea>
+                        <textarea id="input-patient-notes" rows="2" placeholder="의뢰 사유 등..."></textarea>
                     </div>
                     <div class="form-actions">
                         <button id="btn-save-patient" class="btn-primary">저장</button>
@@ -251,15 +335,72 @@
                 </div>
             </div>
 
+            <!-- Patient Detail View -->
+            <div id="patient-detail-view" class="panel-view" style="display:none;">
+                <button id="btn-back-to-patients" class="btn-back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    환자 목록으로
+                </button>
+                <div class="patient-detail-card" id="patient-detail-card">
+                    <div class="patient-detail-header">
+                        <div>
+                            <h2 id="pd-name">-</h2>
+                            <div class="pd-meta" id="pd-meta">-</div>
+                        </div>
+                        <div class="pd-actions">
+                            <button id="btn-edit-patient-detail" class="btn-secondary btn-sm-pad">수정</button>
+                            <button id="btn-export-patient" class="btn-secondary btn-sm-pad">내보내기</button>
+                            <button id="btn-print-patient" class="btn-secondary btn-sm-pad">인쇄</button>
+                        </div>
+                    </div>
+                    <div class="pd-info-grid" id="pd-info-grid"></div>
+                </div>
+                <div class="pd-stats" id="pd-stats"></div>
+                <div class="pd-assessments-section">
+                    <div class="assessments-header">
+                        <h3>평가 기록</h3>
+                        <div class="pd-assessment-actions">
+                            <button id="btn-compare-assessments" class="btn-secondary btn-sm-pad" style="display:none;">비교</button>
+                            <button id="btn-new-assessment-detail" class="btn-primary btn-sm-pad">+ 새 평가</button>
+                        </div>
+                    </div>
+                    <div id="pd-assessments-timeline" class="pd-assessments-timeline"></div>
+                </div>
+                <!-- Comparison Container -->
+                <div id="comparison-container" class="comparison-container" style="display:none;"></div>
+            </div>
+
+            <!-- End Assessment Modal -->
+            <div id="end-assessment-overlay" class="end-assessment-overlay" style="display:none;">
+                <div class="end-assessment-modal">
+                    <h3>평가 종료</h3>
+                    <div class="form-group">
+                        <label>전체 평가 메모</label>
+                        <textarea id="input-overall-notes" rows="4" placeholder="전반적인 소견, 치료 계획, 다음 평가 시 확인 사항 등..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btn-confirm-end-assessment" class="btn-primary">저장 후 종료</button>
+                        <button id="btn-cancel-end-assessment" class="btn-secondary">취소</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Mapping Editor (right panel overlaying viewer) -->
             <div id="mapping-editor" class="mapping-editor" style="display:none;">
                 <div class="mapping-editor-header">
                     <h3>매핑 에디터</h3>
-                    <button id="btn-export-mapping" class="btn-primary btn-sm-pad">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        JSON 내보내기
-                    </button>
+                    <div style="display:flex;gap:6px;">
+                        <button id="btn-import-mapping" class="btn-secondary btn-sm-pad">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            JSON 불러오기
+                        </button>
+                        <button id="btn-export-mapping" class="btn-primary btn-sm-pad">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            JSON 내보내기
+                        </button>
+                    </div>
                 </div>
+                <input type="file" id="input-mapping-editor-file" accept=".json" style="display:none;">
 
                 <!-- Add Region -->
                 <div class="me-section">
@@ -340,7 +481,6 @@
                 <div class="form-group">
                     <label>심각도</label>
                     <select id="select-severity">
-                        <option value="">-- 선택 --</option>
                         <option value="normal">정상</option>
                         <option value="mild">경도</option>
                         <option value="moderate">중등도</option>
