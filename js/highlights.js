@@ -3,19 +3,19 @@
 import * as THREE from 'three';
 
 const highlightedMeshes = new Map(); // meshUUID -> { mesh, originalMaterial, severity }
+// Simplified 3-level severity palette
 const severityColors = {
-    normal:   new THREE.Color(0x6BA88C),
-    mild:     new THREE.Color(0xD4A843),
-    moderate: new THREE.Color(0xD47643),
-    severe:   new THREE.Color(0xC45B4A),
+    normal:   new THREE.Color(0x4a4e58),       // dark gray
+    mild:     new THREE.Color(0x29B6F6),       // sky blue
+    severe:   new THREE.Color(0xFF1744),       // hot red
+    moderate: new THREE.Color(0x29B6F6),       // alias → mild (fallback)
 };
 
-// Emissive tints matching severity (subtle glow on touched meshes)
 const severityEmissive = {
-    normal:   new THREE.Color(0x112211),
-    mild:     new THREE.Color(0x332211),
-    moderate: new THREE.Color(0x331811),
-    severe:   new THREE.Color(0x331111),
+    normal:   new THREE.Color(0x0a0a0e),       // very subtle dark glow
+    mild:     new THREE.Color(0x0a3050),       // blue glow
+    severe:   new THREE.Color(0x500818),       // red glow
+    moderate: new THREE.Color(0x0a3050),       // alias → mild
 };
 
 const defaultHighlightColor = new THREE.Color(0xE8734A);
@@ -156,7 +156,7 @@ export function applyRegionColors(activeRegions) {
             c.material.color = new THREE.Color(0xffffff);
             const emissive = severityEmissive[touchedSeverity] || severityEmissive.severe;
             c.material.emissive = emissive;
-            c.material.emissiveIntensity = 0.4;
+            c.material.emissiveIntensity = touchedSeverity === 'normal' ? 0.15 : 0.6;
             c.material.needsUpdate = true;
         }
     });
@@ -207,7 +207,7 @@ export function highlightMesh(mesh, severity) {
     const highlighted = mesh.material.clone();
     const color = severity ? (severityColors[severity] || defaultHighlightColor) : defaultHighlightColor;
     highlighted.emissive = color;
-    highlighted.emissiveIntensity = 0.6;
+    highlighted.emissiveIntensity = severity === 'normal' ? 0.2 : 0.7;
     mesh.material = highlighted;
 }
 
