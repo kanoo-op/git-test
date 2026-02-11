@@ -67,23 +67,24 @@ const REGION_DEFS = [
     { id: 'foot',       label: '발',                yMin: 0.00, yMax: 0.08 },
 ];
 
-// Tissue type display names
+// Tissue type display names (simplified: 근육 / 뼈 two categories)
+// Muscle group includes: muscles, tendons, ligaments, cartilage, joint capsule, fat
 export const TISSUE_NAMES = {
-    'Muscles.001':              'Muscle',
-    'Bone':                     'Bone',
-    'Tendon.001':               'Tendon',
-    'Ligament.002':             'Ligament',
-    'Cartilage':                'Cartilage',
-    'Cartilage.001':            'Cartilage',
-    'Cartilage.002':            'Cartilage',
-    'Articular_capsule.002':    'Joint Capsule',
-    'Fat.001':                  'Fat Tissue',
-    'Fat.002':                  'Fat Tissue',
-    'Cornea.001':               'Cornea',
-    'Eye.001':                  'Eye',
-    'Suture':                   'Suture',
-    'Teeth':                    'Teeth',
-    'None':                     'Other',
+    'Muscles.001':              '근육',
+    'Bone':                     '뼈',
+    'Tendon.001':               '근육',
+    'Ligament.002':             '근육',
+    'Cartilage':                '근육',
+    'Cartilage.001':            '근육',
+    'Cartilage.002':            '근육',
+    'Articular_capsule.002':    '근육',
+    'Fat.001':                  '근육',
+    'Fat.002':                  '근육',
+    'Cornea.001':               '근육',
+    'Eye.001':                  '근육',
+    'Suture':                   '뼈',
+    'Teeth':                    '뼈',
+    'None':                     '기타',
 };
 
 let modelBounds = null;

@@ -1,10 +1,11 @@
-// controls.js - OrbitControls, raycaster, mesh picking, camera presets
+// Controls.js - OrbitControls, raycaster, mesh picking, camera presets
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { scene, camera, renderer } from './viewer.js';
-import { getRegion, getTissueName } from './regions.js';
-import { setHoverHighlight, clearHoverHighlight } from './highlights.js';
+import { scene, camera, renderer } from './SceneManager.js';
+import { getRegion, getTissueName } from '../anatomy/Regions.js';
+import { setHoverHighlight, clearHoverHighlight } from '../anatomy/Highlights.js';
+import { viewMode, getViewportAtMouse, getViewportCamera, mouseToViewportNDC, registerMainControls } from './MultiView.js';
 
 export let orbitControls;
 
@@ -47,6 +48,9 @@ export function initControls(canvasEl, callbacks = {}) {
     orbitControls.target.copy(modelCenter);
     orbitControls.update();
 
+    // 멀티뷰 모듈에 메인 controls 등록
+    registerMainControls(orbitControls);
+
     // Event listeners
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('click', onClick);
@@ -81,13 +85,29 @@ function updateLoop() {
     }
 }
 
-function onPointerMove(event) {
+function getMouseAndCamera(event) {
+    if (viewMode !== 'single') {
+        const vpIdx = getViewportAtMouse(event.clientX, event.clientY);
+        const ndc = mouseToViewportNDC(event.clientX, event.clientY, vpIdx);
+        return { mouse: ndc, cam: getViewportCamera(vpIdx) };
+    }
     const rect = canvas.getBoundingClientRect();
-    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    return {
+        mouse: {
+            x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+            y: -((event.clientY - rect.top) / rect.height) * 2 + 1,
+        },
+        cam: camera,
+    };
+}
+
+function onPointerMove(event) {
+    const { mouse: m, cam } = getMouseAndCamera(event);
+    mouse.x = m.x;
+    mouse.y = m.y;
 
     // Raycast for hover
-    raycaster.setFromCamera(mouse, camera);
+    raycaster.setFromCamera(mouse, cam);
     const intersects = raycaster.intersectObjects(scene.children, true);
     const hit = intersects.find(i => i.object.isMesh && i.object.visible);
 
@@ -118,7 +138,8 @@ function onClick(event) {
     // Ignore if user was orbiting (dragged)
     if (orbitControls && orbitControls._isDragging) return;
 
-    raycaster.setFromCamera(mouse, camera);
+    const { mouse: m, cam } = getMouseAndCamera(event);
+    raycaster.setFromCamera(m, cam);
     const intersects = raycaster.intersectObjects(scene.children, true);
     const hit = intersects.find(i => i.object.isMesh && i.object.visible);
 
@@ -140,11 +161,8 @@ function onRightClick(event) {
 
     event.preventDefault();
 
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
+    const { mouse: m, cam } = getMouseAndCamera(event);
+    raycaster.setFromCamera(m, cam);
     const intersects = raycaster.intersectObjects(scene.children, true);
     const hit = intersects.find(i => i.object.isMesh && i.object.visible);
 

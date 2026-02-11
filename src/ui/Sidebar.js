@@ -1,9 +1,9 @@
-// sidebar.js - Sidebar navigation and tissue controls
+// Sidebar.js - Sidebar navigation and tissue controls
 
-import { setTissueVisible, setTissueOpacity, clearAllHighlights } from './highlights.js';
-import { setCameraPreset } from './controls.js';
-import { loadMapping, clearMapping, getMappingInfo, hasMappingLoaded } from './regions.js';
-import { saveMapping, getMapping, clearMappingData } from './storage.js';
+import { setTissueVisible, setTissueOpacity, clearAllHighlights } from '../anatomy/Highlights.js';
+import { setCameraPreset } from '../core/Controls.js';
+import { loadMapping, clearMapping, getMappingInfo, hasMappingLoaded } from '../anatomy/Regions.js';
+import { saveMapping, getMapping, clearMappingData } from '../services/Storage.js';
 
 /**
  * Initialize sidebar interactions

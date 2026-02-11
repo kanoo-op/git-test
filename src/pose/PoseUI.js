@@ -1,9 +1,11 @@
-// posture-ui.js - 자세분석 UI 컨트롤러
+// PoseUI.js - 자세분석 UI 컨트롤러
 // 환자 연동, 사진 저장, 분석 결과 → 평가 → 3D 모델 적용
 
-import { analyzePosture, drawLandmarks, initPoseLandmarker } from './posture.js';
-import { applyRegionSeverity, switchView, ensureAssessmentMode } from './panels.js';
-import * as storage from './storage.js';
+import { analyzePosture, initPoseLandmarker } from './PoseDetector.js';
+import { drawLandmarks } from './PoseOverlay.js';
+import { applyRegionSeverity } from '../patients/AssessmentManager.js';
+import { switchView, ensureAssessmentMode } from '../ui/ViewRouter.js';
+import * as storage from '../services/Storage.js';
 
 let webcamStream = null;
 let lastAnalysisResult = null;
@@ -228,6 +230,16 @@ async function runAnalysis(imageElement) {
         renderImageWithOverlay(imageElement, result);
         renderResults(result);
         hideLoadingState();
+
+        // 포즈 대시보드에 분석 결과 전달
+        if (window._updateDashboardFromAnalysis) {
+            window._updateDashboardFromAnalysis(result.landmarks, result.worldLandmarks);
+            // 대시보드 콘텐츠 표시
+            const empty = document.getElementById('pose-dashboard-empty');
+            const content = document.getElementById('pose-dashboard-content');
+            if (empty) empty.style.display = 'none';
+            if (content) content.style.display = 'block';
+        }
     } catch (err) {
         showError('분석 중 오류 발생: ' + err.message);
         console.error('Posture analysis error:', err);

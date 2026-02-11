@@ -1,0 +1,3 @@
+/* main.css - CSS entry point for Vite */
+/* Import the existing monolithic CSS as-is. Can be split into separate files later. */
+@import '../../css/styles.css';

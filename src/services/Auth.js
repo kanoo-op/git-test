@@ -1,7 +1,7 @@
 // auth.js - Login UI + token management for PostureView
 // Replaces PIN-based auth with JWT login/session management
 
-import * as api from './api.js';
+import * as api from './Api.js';
 
 let onAuthSuccess = null;
 

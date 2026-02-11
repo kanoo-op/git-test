@@ -354,7 +354,22 @@ export function clearHoverHighlight() {
     hoveredOriginalIntensity = null;
 }
 
-// --- Tissue visibility ---
+// --- Tissue visibility (근육 / 뼈 two-group system) ---
+
+// Material prefixes for each group
+const MUSCLE_GROUP_PREFIXES = ['Muscles', 'Tendon', 'Ligament', 'Cartilage', 'Articular_capsule', 'Fat', 'Cornea', 'Eye'];
+const BONE_GROUP_PREFIXES = ['Bone', 'Suture', 'Teeth'];
+
+function matchesTissueGroup(matName, groupName) {
+    if (groupName === 'Muscle') {
+        return MUSCLE_GROUP_PREFIXES.some(p => matName.startsWith(p));
+    }
+    if (groupName === 'Bone') {
+        return BONE_GROUP_PREFIXES.some(p => matName.startsWith(p));
+    }
+    // Fallback: direct match (legacy)
+    return matName === groupName || matName.startsWith(groupName.replace('.001', '').replace('.002', ''));
+}
 
 const hiddenTissues = new Set();
 let sceneRoot = null;
@@ -363,31 +378,31 @@ export function setSceneRoot(root) {
     sceneRoot = root;
 }
 
-export function setTissueVisible(materialName, visible) {
+export function setTissueVisible(groupName, visible) {
     if (!sceneRoot) return;
 
     if (visible) {
-        hiddenTissues.delete(materialName);
+        hiddenTissues.delete(groupName);
     } else {
-        hiddenTissues.add(materialName);
+        hiddenTissues.add(groupName);
     }
 
     sceneRoot.traverse((child) => {
         if (!child.isMesh) return;
         const matName = child.userData.tissueType || child.material.name;
-        if (matName === materialName || matName.startsWith(materialName.replace('.001', '').replace('.002', ''))) {
+        if (matchesTissueGroup(matName, groupName)) {
             child.visible = visible;
         }
     });
 }
 
-export function setTissueOpacity(materialName, opacity) {
+export function setTissueOpacity(groupName, opacity) {
     if (!sceneRoot) return;
 
     sceneRoot.traverse((child) => {
         if (!child.isMesh) return;
         const matName = child.userData.tissueType || child.material.name;
-        if (matName === materialName || matName.startsWith(materialName.replace('.001', '').replace('.002', ''))) {
+        if (matchesTissueGroup(matName, groupName)) {
             child.material.transparent = true;
             child.material.opacity = opacity;
             child.material.depthWrite = opacity > 0.9;
@@ -396,6 +411,125 @@ export function setTissueOpacity(materialName, opacity) {
     });
 }
 
-export function isTissueVisible(materialName) {
-    return !hiddenTissues.has(materialName);
+export function isTissueVisible(groupName) {
+    return !hiddenTissues.has(groupName);
+}
+
+// ═══ Render Mode System (근육 / 골격 / X-Ray) ═══
+
+export let currentRenderMode = 'muscle'; // 'muscle' | 'skeleton' | 'xray'
+
+// Store normal-mode materials before switching (uuid → material)
+const normalModeMaterials = new Map();
+
+// X-Ray Fresnel vertex shader
+const XRAY_VERT = `
+varying vec3 vNormal;
+varying vec3 vViewDir;
+void main() {
+    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+    vNormal = normalize(normalMatrix * normal);
+    vViewDir = normalize(-mvPos.xyz);
+    gl_Position = projectionMatrix * mvPos;
+}`;
+
+// X-Ray Fresnel fragment shader (edges glow, surfaces transparent)
+const XRAY_FRAG = `
+uniform vec3 uColor;
+uniform float uIntensity;
+varying vec3 vNormal;
+varying vec3 vViewDir;
+void main() {
+    float fresnel = pow(1.0 - abs(dot(vNormal, vViewDir)), 2.0);
+    float alpha = mix(0.02, uIntensity, fresnel);
+    vec3 col = uColor * (0.4 + fresnel * 0.8);
+    gl_FragColor = vec4(col, alpha);
+}`;
+
+// Cached X-ray ShaderMaterials (uuid → ShaderMaterial)
+const xrayMaterialCache = new Map();
+
+function getXrayMaterial(uuid) {
+    if (!xrayMaterialCache.has(uuid)) {
+        xrayMaterialCache.set(uuid, new THREE.ShaderMaterial({
+            vertexShader: XRAY_VERT,
+            fragmentShader: XRAY_FRAG,
+            uniforms: {
+                uColor: { value: new THREE.Color(0x40A8FF) },
+                uIntensity: { value: 0.35 },
+            },
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+        }));
+    }
+    return xrayMaterialCache.get(uuid);
+}
+
+/**
+ * Switch render mode: 'muscle' (default), 'skeleton' (bones only), 'xray' (Fresnel edges)
+ */
+export function setRenderMode(mode) {
+    if (!sceneRoot) return;
+    if (mode === currentRenderMode) return;
+
+    // Save current materials when leaving muscle mode
+    if (currentRenderMode === 'muscle') {
+        sceneRoot.traverse((child) => {
+            if (child.isMesh) {
+                normalModeMaterials.set(child.uuid, child.material);
+            }
+        });
+    }
+
+    currentRenderMode = mode;
+
+    sceneRoot.traverse((child) => {
+        if (!child.isMesh) return;
+        const matName = child.userData.tissueType || '';
+        const isBone = BONE_GROUP_PREFIXES.some(p => matName.startsWith(p));
+
+        switch (mode) {
+            case 'muscle': {
+                // Restore normal materials
+                const saved = normalModeMaterials.get(child.uuid);
+                if (saved) child.material = saved;
+                // Respect tissue visibility toggles
+                child.visible = !hiddenTissues.has(isBone ? 'Bone' : 'Muscle');
+                break;
+            }
+
+            case 'skeleton': {
+                if (isBone) {
+                    const saved = normalModeMaterials.get(child.uuid);
+                    if (saved) child.material = saved;
+                    child.visible = true;
+                } else {
+                    child.visible = false;
+                }
+                break;
+            }
+
+            case 'xray': {
+                child.visible = true;
+                if (isBone) {
+                    // Bones: bright emissive glow
+                    const baseMat = normalModeMaterials.get(child.uuid) || child.material;
+                    const boneMat = baseMat.clone();
+                    boneMat.emissive = new THREE.Color(0x60D0FF);
+                    boneMat.emissiveIntensity = 0.6;
+                    boneMat.transparent = false;
+                    boneMat.opacity = 1.0;
+                    boneMat.depthWrite = true;
+                    boneMat.needsUpdate = true;
+                    child.material = boneMat;
+                } else {
+                    // Muscles/soft tissue: Fresnel X-ray shader
+                    child.material = getXrayMaterial(child.uuid);
+                }
+                break;
+            }
+        }
+    });
 }

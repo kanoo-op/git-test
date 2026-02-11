@@ -1,47 +1,27 @@
-// app.js - Application entry point and coordinator
+// main.js - Application entry point and coordinator
 
-import { initScene, loadModel, startRenderLoop, captureScreenshot } from './viewer.js';
-import { initControls } from './controls.js';
-import { initSidebar } from './sidebar.js';
-import { initPanels, switchView, openContextPanel, closeContextPanel, isMappingAssignMode, handleMappingAssign, handleMappingRemove } from './panels.js';
-import { selectMesh, deselectCurrentMesh, getSelectedMesh } from './highlights.js';
-import { exportAllData, clearMappingData, hasPinSet, verifyPin, setPin, removePin } from './storage.js';
-import { initPostureUI } from './posture-ui.js';
+import './styles/main.css';
 
-// ===== Toast Notification System =====
+import { initScene, startRenderLoop, captureScreenshot } from './core/SceneManager.js';
+import { loadModel } from './core/ModelLoader.js';
+import { scene, camera } from './core/SceneManager.js';
+import { initControls } from './core/Controls.js';
+import { initSidebar } from './ui/Sidebar.js';
+import { initPanels, switchView } from './ui/ViewRouter.js';
+import { openContextPanel, closeContextPanel } from './ui/ContextPanel.js';
+import { isMappingAssignMode } from './ui/ViewRouter.js';
+import { handleMappingAssign, handleMappingRemove } from './mapping/MappingEditor.js';
+import { selectMesh, deselectCurrentMesh, getSelectedMesh, setRenderMode } from './anatomy/Highlights.js';
+import { exportAllData, clearMappingData, hasPinSet, verifyPin, setPin, removePin } from './services/Storage.js';
+import { initPostureUI } from './pose/PoseUI.js';
+import { initAnatomySearch, showAnatomySearch } from './anatomy/AnatomySearch.js';
+import { initRealtimePoseUI } from './pose/RealtimeUI.js';
+import { initPoseDashboard, updateDashboardFromAnalysis, refreshDashboardCharts } from './pose/PoseDashboard.js';
+import { initMultiView, setViewMode } from './core/MultiView.js';
 
-const TOAST_ICONS = {
-    success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-    error: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
-    warning: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-    info: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-};
-
-window.showToast = function(message, type = 'info', duration = 3000) {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-        <span class="toast-icon">${TOAST_ICONS[type] || TOAST_ICONS.info}</span>
-        <span class="toast-message">${message}</span>
-        <button class="toast-close" aria-label="닫기">&times;</button>
-    `;
-
-    container.appendChild(toast);
-
-    const closeBtn = toast.querySelector('.toast-close');
-    const removeToast = () => {
-        toast.classList.add('fade-out');
-        setTimeout(() => toast.remove(), 300);
-    };
-    closeBtn.addEventListener('click', removeToast);
-
-    if (duration > 0) {
-        setTimeout(removeToast, duration);
-    }
-};
+// Toast + Video Modal (self-registering on window)
+import './ui/Toast.js';
+import './ui/VideoModal.js';
 
 // DOM references
 const loadingOverlay = document.getElementById('loading-overlay');
@@ -90,7 +70,7 @@ loadModel(
         // Start render loop
         startRenderLoop();
 
-        // Initialize controls (pass model center so camera targets it, not origin)
+        // Initialize controls
         initControls(canvas, {
             onMeshClick: handleMeshClick,
             onMeshHover: handleMeshHover,
@@ -106,9 +86,18 @@ loadModel(
 
         initPanels();
         initPostureUI();
+        initAnatomySearch({ switchView: switchView });
+        initRealtimePoseUI();
+        initPoseDashboard();
+        window._refreshDashboardCharts = refreshDashboardCharts;
+        window._updateDashboardFromAnalysis = updateDashboardFromAnalysis;
+        initMultiView(canvas, scene, camera, bounds.center);
+        initViewModeToggle();
+        initRenderModeToggle();
         initMobileMenu();
         initKeyboardShortcuts();
         initPinManagement();
+        initThemeToggle();
 
         // Default view: dashboard
         switchView('dashboard');
@@ -133,7 +122,6 @@ loadModel(
 function handleMeshClick(mesh, info) {
     if (!mesh) return;
 
-    // If in mapping assign mode, add mesh to selected region
     if (isMappingAssignMode()) {
         handleMappingAssign(mesh);
         return;
@@ -141,14 +129,12 @@ function handleMeshClick(mesh, info) {
 
     const currentSel = getSelectedMesh();
 
-    // Click same mesh → deselect + close panel
     if (currentSel === mesh) {
         deselectCurrentMesh();
         closeContextPanel();
         return;
     }
 
-    // Deselect previous, select new
     deselectCurrentMesh();
     selectMesh(mesh);
     openContextPanel(mesh, info);
@@ -168,7 +154,6 @@ function handleMeshHover(mesh, info) {
         tooltipTissue.textContent = info.tissue;
         tooltipRegion.textContent = `${info.region} (${info.side})`;
 
-        // Show mapping source indicator
         if (info.source === 'mapping') {
             tooltipMapped.style.display = 'block';
             tooltipMapped.textContent = '매핑됨';
@@ -176,7 +161,6 @@ function handleMeshHover(mesh, info) {
             tooltipMapped.style.display = 'none';
         }
 
-        // Keep tooltip within viewport
         const rect = tooltip.getBoundingClientRect();
         if (rect.right > window.innerWidth) {
             tooltip.style.left = (info.x - rect.width - 16) + 'px';
@@ -208,7 +192,6 @@ function handleScreenshot() {
     }
 }
 
-// Bind screenshot button (added via HUD)
 document.addEventListener('click', (e) => {
     if (e.target.closest('#btn-screenshot')) {
         handleScreenshot();
@@ -234,7 +217,6 @@ function initMobileMenu() {
         overlay.classList.remove('active');
     });
 
-    // Close sidebar when navigating on mobile
     sidebar.querySelectorAll('.nav-item').forEach(btn => {
         btn.addEventListener('click', () => {
             if (window.innerWidth <= 768) {
@@ -249,8 +231,24 @@ function initMobileMenu() {
 
 function initKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-        // Esc = close panels/modals
+        if ((e.ctrlKey && e.key === 'k') || (e.key === '/' && !e.target.matches('input, textarea, select'))) {
+            e.preventDefault();
+            showAnatomySearch();
+            return;
+        }
+
+        if (!e.target.matches('input, textarea, select') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            if (e.key === '1') { switchViewMode('single'); return; }
+            if (e.key === '2') { switchViewMode('dual'); return; }
+            if (e.key === '4') { switchViewMode('quad'); return; }
+        }
+
         if (e.key === 'Escape') {
+            const videoModal = document.getElementById('video-modal-overlay');
+            if (videoModal && videoModal.style.display !== 'none') {
+                window.closeExerciseVideo();
+                return;
+            }
             const endModal = document.getElementById('end-assessment-overlay');
             if (endModal && endModal.style.display !== 'none') {
                 endModal.style.display = 'none';
@@ -266,7 +264,6 @@ function initKeyboardShortcuts() {
                 closeContextPanel();
                 return;
             }
-            // Close mobile sidebar
             const sidebar = document.getElementById('sidebar');
             if (sidebar && sidebar.classList.contains('open')) {
                 sidebar.classList.remove('open');
@@ -275,6 +272,74 @@ function initKeyboardShortcuts() {
             }
         }
     });
+}
+
+// ===== View Mode Toggle =====
+
+function initViewModeToggle() {
+    document.querySelectorAll('.view-mode-btn[data-view-mode]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.viewMode;
+            switchViewMode(mode);
+        });
+    });
+}
+
+function switchViewMode(mode) {
+    setViewMode(mode);
+    document.querySelectorAll('.view-mode-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`.view-mode-btn[data-view-mode="${mode}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+}
+
+// ===== Render Mode Toggle =====
+
+function initRenderModeToggle() {
+    document.querySelectorAll('.render-mode-btn[data-render-mode]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            switchRenderMode(btn.dataset.renderMode);
+        });
+    });
+}
+
+function switchRenderMode(mode) {
+    setRenderMode(mode);
+    document.querySelectorAll('.render-mode-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`.render-mode-btn[data-render-mode="${mode}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+}
+
+// ===== Theme Toggle =====
+
+function initThemeToggle() {
+    const saved = localStorage.getItem('postureview_theme');
+    if (saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    updateThemeLabel();
+
+    const btn = document.getElementById('btn-theme-toggle');
+    if (btn) {
+        btn.addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('postureview_theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('postureview_theme', 'dark');
+            }
+            updateThemeLabel();
+        });
+    }
+}
+
+function updateThemeLabel() {
+    const label = document.querySelector('.theme-label-text');
+    if (label) {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        label.textContent = isDark ? '라이트모드' : '다크모드';
+    }
 }
 
 // ===== PIN Lock =====
@@ -289,11 +354,9 @@ function initPinLock() {
     if (!overlay) return Promise.resolve();
 
     if (!hasPinSet()) {
-        // No PIN set - skip lock screen
         return Promise.resolve();
     }
 
-    // PIN is set - show lock screen
     return new Promise((resolve) => {
         overlay.style.display = 'flex';
         submitBtn.style.display = '';
@@ -328,10 +391,16 @@ function initPinLock() {
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') handleSubmit();
         });
+        input.addEventListener('input', () => {
+            error.textContent = '';
+            if (input.value.trim().length >= 4) {
+                handleSubmit();
+            }
+        });
     });
 }
 
-// ===== PIN Management (sidebar) =====
+// ===== PIN Management =====
 
 function initPinManagement() {
     const footer = document.querySelector('.sidebar-footer');

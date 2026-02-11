@@ -7,14 +7,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-        }
-    }
+    <script>
+        // Apply saved theme before paint to prevent flash
+        (function(){var t=localStorage.getItem('postureview_theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
     </script>
 </head>
 <body>
@@ -104,6 +99,14 @@
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 100 6 3 3 0 000-6z"/><path d="M12 8v8"/><path d="M9 22l3-6 3 6"/><path d="M6 13l6-1 6 1"/></svg>
                     <span>자세 분석</span>
                 </button>
+                <button class="nav-item" data-view="disease-search">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>질환 검색</span>
+                </button>
+                <button class="nav-item" data-view="pose-dashboard">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <span>포즈 대시보드</span>
+                </button>
                 <button class="nav-item" data-view="mapping">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     <span>매핑 에디터</span>
@@ -119,44 +122,20 @@
                 </div>
             </div>
 
-            <!-- Tissue Toggles -->
+            <!-- Tissue Toggles (근육 / 뼈 two categories) -->
             <div class="sidebar-section" id="tissue-toggles">
                 <div class="section-label">조직 레이어</div>
                 <label class="tissue-toggle">
-                    <input type="checkbox" checked data-tissue="Muscles.001">
+                    <input type="checkbox" checked data-tissue="Muscle">
                     <span class="tissue-swatch" style="background:#F24D2E;"></span>
                     <span>근육</span>
-                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Muscles.001">
+                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Muscle">
                 </label>
                 <label class="tissue-toggle">
                     <input type="checkbox" checked data-tissue="Bone">
                     <span class="tissue-swatch" style="background:#CC8C4F;"></span>
                     <span>뼈</span>
                     <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Bone">
-                </label>
-                <label class="tissue-toggle">
-                    <input type="checkbox" checked data-tissue="Tendon.001">
-                    <span class="tissue-swatch" style="background:#F24D2E;"></span>
-                    <span>힘줄</span>
-                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Tendon.001">
-                </label>
-                <label class="tissue-toggle">
-                    <input type="checkbox" checked data-tissue="Ligament.002">
-                    <span class="tissue-swatch" style="background:#CCFFF7;"></span>
-                    <span>인대</span>
-                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Ligament.002">
-                </label>
-                <label class="tissue-toggle">
-                    <input type="checkbox" checked data-tissue="Cartilage">
-                    <span class="tissue-swatch" style="background:#9ECCCC;"></span>
-                    <span>연골</span>
-                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Cartilage">
-                </label>
-                <label class="tissue-toggle">
-                    <input type="checkbox" checked data-tissue="Articular_capsule.002">
-                    <span class="tissue-swatch" style="background:#F24D2E;"></span>
-                    <span>관절낭</span>
-                    <input type="range" class="opacity-slider" min="0" max="100" value="100" data-tissue-opacity="Articular_capsule.002">
                 </label>
             </div>
 
@@ -196,7 +175,17 @@
                 </div>
             </div>
 
+
             <div class="sidebar-footer">
+                <button id="btn-theme-toggle" class="theme-toggle-btn" title="테마 전환">
+                    <span class="theme-icon-dark">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    </span>
+                    <span class="theme-icon-light">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    </span>
+                    <span class="theme-label-text">다크모드</span>
+                </button>
                 <button id="btn-export" class="footer-btn" title="데이터 내보내기">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     내보내기
@@ -209,6 +198,7 @@
             <!-- 3D Viewer -->
             <div id="viewer-container" class="viewer-container">
                 <canvas id="three-canvas"></canvas>
+                <canvas id="viewport-overlay-canvas" class="viewport-overlay-canvas"></canvas>
                 <!-- Analysis HUD Overlay -->
                 <div class="viewer-hud">
                     <div class="corner-tl"></div>
@@ -223,7 +213,36 @@
                     <div class="center-reticle"></div>
                     <div class="side-bar-left"></div>
                     <div class="side-bar-right"></div>
+                    <!-- Bottom-center: Render + View mode toggles -->
                     <div class="viewer-hud-actions">
+                        <div class="render-mode-toggle">
+                            <button class="render-mode-btn active" data-render-mode="muscle" title="근육 뷰">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M6 20V10M12 20V4"/><path d="M2 20h20"/></svg>
+                                근육
+                            </button>
+                            <button class="render-mode-btn" data-render-mode="skeleton" title="골격 뷰">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="21" x2="12" y2="16"/><line x1="16" y1="21" x2="12" y2="16"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+                                골격
+                            </button>
+                            <button class="render-mode-btn" data-render-mode="xray" title="X-Ray 뷰">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 000 20" opacity="0.3"/><line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="2 2"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"/></svg>
+                                X-Ray
+                            </button>
+                        </div>
+                        <div class="view-mode-toggle">
+                            <button class="view-mode-btn active" data-view-mode="single" title="단일 뷰 (1)">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="12" height="12" rx="1"/></svg>
+                            </button>
+                            <button class="view-mode-btn" data-view-mode="dual" title="2분할 (2)">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="5" height="12" rx="1"/><rect x="8" y="1" width="5" height="12" rx="1"/></svg>
+                            </button>
+                            <button class="view-mode-btn" data-view-mode="quad" title="4분할 (4)">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Bottom-left: Screenshot -->
+                    <div class="viewer-hud-actions-bl">
                         <button id="btn-screenshot" class="hud-action-btn" title="3D 뷰 스크린샷">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
                             스크린샷
@@ -236,6 +255,63 @@
                     <div class="tooltip-region" id="tooltip-region">-</div>
                     <div class="tooltip-mapped" id="tooltip-mapped" style="display:none;"></div>
                 </div>
+                <!-- Realtime Pose PiP Webcam -->
+                <div id="realtime-pip" class="realtime-pip" style="display:none;">
+                    <div class="realtime-pip-header">
+                        <span id="realtime-pulse" class="realtime-pulse"></span>
+                        <span class="realtime-pip-label">LIVE</span>
+                    </div>
+                </div>
+
+                <!-- Realtime Metrics Panel -->
+                <div id="realtime-metrics-panel" class="realtime-metrics-panel" style="display:none;">
+                    <div class="metrics-header">실시간 자세 분석</div>
+                    <div class="metric-row">
+                        <span class="metric-label">전방 두부</span>
+                        <span class="metric-value" id="metric-fha">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">어깨 높이차</span>
+                        <span class="metric-value" id="metric-sld">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">골반 기울기</span>
+                        <span class="metric-value" id="metric-pt">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">체간 기울기</span>
+                        <span class="metric-value" id="metric-tlt">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">무릎(좌)</span>
+                        <span class="metric-value" id="metric-knee-l">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">무릎(우)</span>
+                        <span class="metric-value" id="metric-knee-r">-</span>
+                    </div>
+                    <div class="metric-row metric-confidence">
+                        <span class="metric-label">신뢰도</span>
+                        <span class="metric-value" id="metric-confidence">-</span>
+                    </div>
+                </div>
+
+                <!-- Realtime Controls Bar -->
+                <div id="realtime-controls-bar" class="realtime-controls-bar">
+                    <button id="btn-realtime-start" class="realtime-ctrl-btn realtime-start" title="실시간 포즈 감지 시작">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        시작
+                    </button>
+                    <button id="btn-realtime-stop" class="realtime-ctrl-btn realtime-stop" style="display:none;" title="중지">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                        중지
+                    </button>
+                    <button id="btn-realtime-snapshot" class="realtime-ctrl-btn" title="스냅샷 캡처">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        스냅샷
+                    </button>
+                </div>
+
                 <!-- Assessment Mode Banner -->
                 <div id="assessment-banner" class="assessment-banner" style="display:none;">
                     <span>평가 모드 - 부위를 선택하거나 근육을 직접 클릭하세요</span>
@@ -424,6 +500,137 @@
                 </div>
                 <!-- Comparison Container -->
                 <div id="comparison-container" class="comparison-container" style="display:none;"></div>
+            </div>
+
+            <!-- Disease Search View -->
+            <div id="disease-search-view" class="panel-view" style="display:none;">
+                <div class="panel-header">
+                    <h2>질환 검색</h2>
+                </div>
+                <div class="disease-search-bar">
+                    <div class="disease-search-input-wrap">
+                        <svg class="disease-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="disease-search-input" class="disease-search-input" placeholder="질환명, 근육명, 부위명으로 검색..." autocomplete="off">
+                    </div>
+                    <p class="disease-search-hint">예: 디스크, 오십견, 족저근막염, 삼각근, 허리</p>
+                </div>
+                <div id="disease-search-results" class="disease-search-results">
+                    <div class="disease-search-empty">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <p>검색어를 입력하면 관련 질환, 근육, 부위가 표시됩니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pose Analysis Dashboard View -->
+            <div id="pose-dashboard-view" class="panel-view" style="display:none;">
+                <div class="panel-header">
+                    <h2>포즈 분석 대시보드</h2>
+                    <button id="dashboard-analyze-btn" class="btn-primary btn-sm-pad">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        분석 갱신
+                    </button>
+                </div>
+
+                <!-- 안내 (분석 결과 없을 때) -->
+                <div id="pose-dashboard-empty" class="pose-dashboard-empty">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+                        <path d="M12 2a3 3 0 100 6 3 3 0 000-6z"/><path d="M12 8v8"/><path d="M9 22l3-6 3 6"/><path d="M6 13l6-1 6 1"/>
+                    </svg>
+                    <p>자세 분석 탭에서 사진을 분석하면<br>관절 각도와 좌우 균형 데이터가 여기에 표시됩니다.</p>
+                </div>
+
+                <!-- 대시보드 콘텐츠 -->
+                <div id="pose-dashboard-content" class="pose-dashboard-content" style="display:none;">
+                    <!-- 균형 점수 요약 -->
+                    <div class="pose-score-card">
+                        <div class="pose-score-circle">
+                            <span id="balance-overall-score" class="balance-score-value">-</span>
+                            <span class="balance-score-label">균형 점수</span>
+                        </div>
+                        <div class="pose-score-info">
+                            <span class="pose-score-grade" id="balance-overall-grade">-</span>
+                            <p class="pose-score-desc">좌우 관절 각도의 대칭성을 종합 평가한 점수입니다. 85점 이상이면 우수합니다.</p>
+                        </div>
+                    </div>
+
+                    <!-- 관절 각도 테이블 -->
+                    <div class="pose-dash-section">
+                        <h3 class="pose-dash-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            관절 각도 측정
+                        </h3>
+                        <div class="joint-angles-table-wrap">
+                            <table class="joint-angles-table">
+                                <thead>
+                                    <tr>
+                                        <th>관절</th>
+                                        <th>측정값</th>
+                                        <th>정상 범위</th>
+                                        <th>상태</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="joint-angles-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 포즈 프리셋 비교 -->
+                    <div class="pose-dash-section">
+                        <h3 class="pose-dash-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M8 3H3v5M3 16v5h5M21 16v5h-5"/><path d="M21 3l-7 7M3 3l7 7M3 21l7-7M21 21l-7-7"/></svg>
+                            운동 자세 비교
+                        </h3>
+                        <div class="preset-comparison-header">
+                            <select id="preset-select" class="preset-select"></select>
+                            <span class="preset-match-label">적합도</span>
+                            <span id="preset-match-score" class="preset-match-value">-</span>
+                        </div>
+                        <div id="preset-comparison-body" class="preset-comparison-body"></div>
+                    </div>
+
+                    <!-- 레이더 차트 -->
+                    <div class="pose-dash-section">
+                        <h3 class="pose-dash-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>
+                            관절 각도 레이더
+                        </h3>
+                        <div class="dashboard-chart-wrapper" style="height:320px;">
+                            <canvas id="radar-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 좌우 균형 분석 -->
+                    <div class="pose-dash-section">
+                        <h3 class="pose-dash-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12H3M12 3v18"/></svg>
+                            좌우 균형 분석
+                        </h3>
+                        <div id="balance-pairs-list" class="balance-pairs-list"></div>
+                    </div>
+
+                    <!-- 좌우 비교 바 차트 -->
+                    <div class="pose-dash-section">
+                        <h3 class="pose-dash-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="2" width="4" height="19"/></svg>
+                            좌/우 비교
+                        </h3>
+                        <div class="dashboard-chart-wrapper" style="height:280px;">
+                            <canvas id="balance-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 히스토리 차트 -->
+                    <div class="pose-dash-section">
+                        <h3 class="pose-dash-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            균형 점수 추이
+                        </h3>
+                        <div class="dashboard-chart-wrapper" style="height:240px;">
+                            <canvas id="history-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Posture Analysis View -->
@@ -725,33 +932,16 @@
                 </button>
             </div>
             <div class="context-body">
-                <div class="detail-row">
-                    <span class="detail-label">조직 유형</span>
-                    <span class="detail-value" id="detail-tissue">-</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">신체 부위</span>
-                    <span class="detail-value" id="detail-region">-</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">좌/우</span>
-                    <span class="detail-value" id="detail-side">-</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">메쉬 ID</span>
-                    <span class="detail-value detail-mono" id="detail-mesh-id">-</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">매핑 소스</span>
-                    <span class="detail-value" id="detail-source">-</span>
-                </div>
+                <!-- 해부학 정보 영역 -->
+                <div id="anatomy-info-section" style="display:none;"></div>
 
-                <div class="section-label" style="margin-top:16px;">평가</div>
+                <div class="section-label" style="margin-top:8px;">평가</div>
                 <div class="form-group">
                     <label>심각도</label>
                     <select id="select-severity">
                         <option value="normal">정상</option>
                         <option value="mild">경도</option>
+                        <option value="moderate">중등도</option>
                         <option value="severe">중증</option>
                     </select>
                 </div>
@@ -785,13 +975,29 @@
         </div>
     </div>
 
+    <!-- Exercise Video Modal -->
+    <div id="video-modal-overlay" class="video-modal-overlay" style="display:none;">
+        <div class="video-modal">
+            <div class="video-modal-header">
+                <h3 id="video-modal-title" class="video-modal-title">운동 영상</h3>
+                <button id="btn-close-video" class="video-modal-close" aria-label="닫기">&times;</button>
+            </div>
+            <div class="video-modal-body">
+                <div id="video-modal-player" class="video-modal-player"></div>
+            </div>
+            <div class="video-modal-footer">
+                <span id="video-modal-difficulty" class="video-modal-difficulty"></span>
+                <a id="video-modal-yt-link" class="video-modal-yt-link" href="#" target="_blank" rel="noopener">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    YouTube에서 보기
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- CDN Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>
