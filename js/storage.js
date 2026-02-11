@@ -1,6 +1,155 @@
-// storage.js - localStorage persistence for patients & assessments
+// storage.js - IndexedDB + localStorage persistence for patients & assessments
+// IndexedDB is primary storage; localStorage used as fallback and for migration
 
 const STORAGE_KEY = 'postureview_data';
+const DB_NAME = 'PostureViewDB';
+const DB_VERSION = 1;
+const STORE_DATA = 'appData';
+const STORE_PHOTOS = 'photos';
+
+let db = null;
+let dbReady = false;
+
+// ===== IndexedDB Initialization =====
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+            reject(new Error('IndexedDB not supported'));
+            return;
+        }
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_DATA)) {
+                db.createObjectStore(STORE_DATA, { keyPath: 'key' });
+            }
+            if (!db.objectStoreNames.contains(STORE_PHOTOS)) {
+                db.createObjectStore(STORE_PHOTOS, { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function initDB() {
+    try {
+        db = await openDB();
+        dbReady = true;
+        await migrateFromLocalStorage();
+    } catch (e) {
+        console.warn('IndexedDB init failed, using localStorage fallback:', e);
+        dbReady = false;
+    }
+}
+
+// Auto-init (non-blocking)
+const dbInitPromise = initDB();
+
+// ===== Migration from localStorage =====
+
+async function migrateFromLocalStorage() {
+    if (!db) return;
+    const migrated = localStorage.getItem('_idb_migrated');
+    if (migrated) return;
+
+    try {
+        // Migrate main data
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            await idbPut(STORE_DATA, { key: 'main', ...parsed });
+        }
+
+        // Migrate photos
+        const photoKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('pv_photo_')) {
+                photoKeys.push(key);
+            }
+        }
+
+        for (const key of photoKeys) {
+            const assessmentId = key.replace('pv_photo_', '');
+            const base64 = localStorage.getItem(key);
+            if (base64) {
+                // Convert base64 to Blob for 33% savings
+                try {
+                    const blob = base64ToBlob(base64);
+                    await idbPut(STORE_PHOTOS, { id: assessmentId, blob, mimeType: 'image/jpeg' });
+                } catch {
+                    // Fallback: store as-is
+                    await idbPut(STORE_PHOTOS, { id: assessmentId, base64 });
+                }
+            }
+        }
+
+        localStorage.setItem('_idb_migrated', 'true');
+        console.log('Migration from localStorage to IndexedDB complete');
+    } catch (e) {
+        console.warn('Migration error:', e);
+    }
+}
+
+function base64ToBlob(dataUrl) {
+    const parts = dataUrl.split(',');
+    const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const byteString = atob(parts[1]);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mime });
+}
+
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+// ===== IndexedDB Helpers =====
+
+function idbPut(storeName, value) {
+    return new Promise((resolve, reject) => {
+        if (!db) { reject(new Error('No DB')); return; }
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.put(value);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e.target.error);
+    });
+}
+
+function idbGet(storeName, key) {
+    return new Promise((resolve, reject) => {
+        if (!db) { reject(new Error('No DB')); return; }
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = (e) => reject(e.target.error);
+    });
+}
+
+function idbDelete(storeName, key) {
+    return new Promise((resolve, reject) => {
+        if (!db) { reject(new Error('No DB')); return; }
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.delete(key);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e.target.error);
+    });
+}
+
+// ===== Data Layer (sync in-memory + async persist) =====
 
 function loadData() {
     try {
@@ -12,15 +161,42 @@ function loadData() {
     return { patients: [], currentPatientId: null, meshNames: {} };
 }
 
-function saveData(data) {
+function saveData(d) {
+    // Always save to localStorage for immediate sync reads
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
     } catch (e) {
         console.warn('Failed to save data to localStorage:', e);
+        if (window.showToast) {
+            window.showToast('데이터 저장 실패: 저장소 용량이 부족합니다.', 'error', 5000);
+        }
+    }
+    // Also persist to IndexedDB (async, non-blocking)
+    if (dbReady) {
+        idbPut(STORE_DATA, { key: 'main', ...d }).catch(e => {
+            console.warn('IndexedDB save failed:', e);
+        });
     }
 }
 
 let data = loadData();
+
+// When IndexedDB is ready, try to load from there (may have newer data)
+dbInitPromise.then(async () => {
+    if (!dbReady) return;
+    try {
+        const idbData = await idbGet(STORE_DATA, 'main');
+        if (idbData && idbData.patients) {
+            // Use IDB data if it has more patients (likely newer)
+            if (idbData.patients.length >= data.patients.length) {
+                delete idbData.key;
+                data = idbData;
+            }
+        }
+    } catch {
+        // Ignore
+    }
+});
 
 // --- Patients ---
 
@@ -89,7 +265,8 @@ export function createAssessment(patientId) {
         selections: [],
         highlightState: [],
         summary: '',
-        overallNotes: ''
+        overallNotes: '',
+        soapNotes: null
     };
     patient.assessments.push(assessment);
     saveData(data);
@@ -113,7 +290,6 @@ export function updateAssessment(patientId, assessmentId, updates) {
 export function addSelectionToAssessment(patientId, assessmentId, selection) {
     const assessment = getAssessment(patientId, assessmentId);
     if (!assessment) return null;
-    // Replace if same mesh already selected
     const idx = assessment.selections.findIndex(s => s.meshId === selection.meshId);
     if (idx >= 0) {
         assessment.selections[idx] = selection;
@@ -128,6 +304,7 @@ export function deleteAssessment(patientId, assessmentId) {
     const patient = getPatient(patientId);
     if (!patient) return;
     patient.assessments = patient.assessments.filter(a => a.id !== assessmentId);
+    deletePosturePhoto(assessmentId);
     saveData(data);
 }
 
@@ -275,6 +452,88 @@ export function clearMappingData() {
     saveData(data);
 }
 
+// --- Posture Photos (IndexedDB primary, localStorage fallback) ---
+
+const PHOTO_PREFIX = 'pv_photo_';
+
+export function savePosturePhoto(assessmentId, base64Data) {
+    // Try IndexedDB first (Blob storage for efficiency)
+    if (dbReady) {
+        try {
+            const blob = base64ToBlob(base64Data);
+            idbPut(STORE_PHOTOS, { id: assessmentId, blob, mimeType: 'image/jpeg' }).catch(() => {});
+        } catch {
+            idbPut(STORE_PHOTOS, { id: assessmentId, base64: base64Data }).catch(() => {});
+        }
+    }
+    // Also try localStorage as fallback
+    try {
+        localStorage.setItem(PHOTO_PREFIX + assessmentId, base64Data);
+    } catch (e) {
+        console.warn('사진 localStorage 저장 실패 (용량 초과 가능):', e);
+        if (!dbReady && window.showToast) {
+            const usage = getStorageUsage();
+            window.showToast(`사진 저장 실패: 저장소 용량 부족 (${usage.usedMB}MB / ${usage.limitMB}MB 사용 중)`, 'error', 5000);
+            return false;
+        }
+    }
+    return true;
+}
+
+export function getPosturePhoto(assessmentId) {
+    // Sync: return from localStorage immediately
+    const lsPhoto = localStorage.getItem(PHOTO_PREFIX + assessmentId);
+    if (lsPhoto) return lsPhoto;
+
+    // IndexedDB photos are async - can't return synchronously
+    // Trigger async load for future use
+    if (dbReady) {
+        idbGet(STORE_PHOTOS, assessmentId).then(record => {
+            if (record) {
+                if (record.blob) {
+                    blobToBase64(record.blob).then(b64 => {
+                        try { localStorage.setItem(PHOTO_PREFIX + assessmentId, b64); } catch {}
+                    });
+                } else if (record.base64) {
+                    try { localStorage.setItem(PHOTO_PREFIX + assessmentId, record.base64); } catch {}
+                }
+            }
+        }).catch(() => {});
+    }
+    return null;
+}
+
+export function deletePosturePhoto(assessmentId) {
+    localStorage.removeItem(PHOTO_PREFIX + assessmentId);
+    if (dbReady) {
+        idbDelete(STORE_PHOTOS, assessmentId).catch(() => {});
+    }
+}
+
+// --- Storage Usage ---
+
+export function getStorageUsage() {
+    let totalBytes = 0;
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key);
+            totalBytes += (key.length + value.length) * 2; // UTF-16
+        }
+    } catch (e) {
+        // Ignore
+    }
+    const limitBytes = dbReady ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    const limitMB = dbReady ? 50 : 5;
+    return {
+        usedBytes: totalBytes,
+        usedMB: Math.round(totalBytes / (1024 * 1024) * 100) / 100,
+        limitMB,
+        percent: Math.min(Math.round((totalBytes / limitBytes) * 100), 100),
+        usingIndexedDB: dbReady,
+    };
+}
+
 // --- Custom Mesh Names ---
 
 export function getMeshName(meshId) {
@@ -310,4 +569,36 @@ export function importData(jsonString) {
         console.error('Import failed:', e);
     }
     return false;
+}
+
+// --- PIN / Data Protection ---
+
+const PIN_KEY = 'pv_pin_hash';
+
+export async function hashPin(pin) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pin + 'PostureView_Salt');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+export function hasPinSet() {
+    return !!localStorage.getItem(PIN_KEY);
+}
+
+export async function setPin(pin) {
+    const hash = await hashPin(pin);
+    localStorage.setItem(PIN_KEY, hash);
+}
+
+export async function verifyPin(pin) {
+    const stored = localStorage.getItem(PIN_KEY);
+    if (!stored) return true; // No PIN set = always pass
+    const hash = await hashPin(pin);
+    return hash === stored;
+}
+
+export function removePin() {
+    localStorage.removeItem(PIN_KEY);
 }

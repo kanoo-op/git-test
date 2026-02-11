@@ -8,7 +8,7 @@
     --bg-primary:     #FAF9F7;
     --bg-secondary:   #F5F3EF;
     --bg-tertiary:    #EFEDE8;
-    --bg-viewer:      #F0EEEA;
+    --bg-viewer:      #080d18;
 
     /* Text hierarchy */
     --text-primary:   #1A1A1A;
@@ -30,11 +30,11 @@
     --highlight-tendon:   #7B6FA0;
     --highlight-ligament: #6BA88C;
 
-    /* Severity / status */
-    --status-normal:    #6BA88C;
-    --status-mild:      #D4A843;
-    --status-moderate:  #D47643;
-    --status-severe:    #C45B4A;
+    /* Severity / status (3-level: gray → blue → red) */
+    --status-normal:    #7A7E88;
+    --status-mild:      #29B6F6;
+    --status-moderate:  #29B6F6;
+    --status-severe:    #FF1744;
 
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
@@ -488,27 +488,221 @@ input, textarea, select {
     width: 100%;
     height: 100%;
     position: relative;
+    background: #080d18;
 }
 
 .viewer-container canvas {
     width: 100% !important;
     height: 100% !important;
     display: block;
+    position: relative;
+    z-index: 1;
+}
+
+/* ===== Analysis Background Overlays ===== */
+
+/* Grid overlay */
+.viewer-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image:
+        linear-gradient(rgba(32, 160, 200, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(32, 160, 200, 0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+}
+
+/* Vignette + subtle radial glow */
+.viewer-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background:
+        radial-gradient(ellipse at center, transparent 40%, rgba(4, 8, 20, 0.6) 100%);
+    pointer-events: none;
+}
+
+/* Corner brackets - analysis frame */
+.viewer-hud {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* Top-left corner bracket */
+.viewer-hud .corner-tl,
+.viewer-hud .corner-tr,
+.viewer-hud .corner-bl,
+.viewer-hud .corner-br {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+}
+
+.viewer-hud .corner-tl {
+    top: 20px; left: 20px;
+    border-top: 2px solid rgba(32, 200, 220, 0.5);
+    border-left: 2px solid rgba(32, 200, 220, 0.5);
+}
+
+.viewer-hud .corner-tr {
+    top: 20px; right: 20px;
+    border-top: 2px solid rgba(32, 200, 220, 0.5);
+    border-right: 2px solid rgba(32, 200, 220, 0.5);
+}
+
+.viewer-hud .corner-bl {
+    bottom: 20px; left: 20px;
+    border-bottom: 2px solid rgba(32, 200, 220, 0.5);
+    border-left: 2px solid rgba(32, 200, 220, 0.5);
+}
+
+.viewer-hud .corner-br {
+    bottom: 20px; right: 20px;
+    border-bottom: 2px solid rgba(32, 200, 220, 0.5);
+    border-right: 2px solid rgba(32, 200, 220, 0.5);
+}
+
+/* HUD info text */
+.viewer-hud .hud-label {
+    position: absolute;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(32, 200, 220, 0.5);
+    white-space: nowrap;
+}
+
+.viewer-hud .hud-top-left {
+    top: 24px;
+    left: 68px;
+}
+
+.viewer-hud .hud-top-right {
+    top: 24px;
+    right: 68px;
+}
+
+.viewer-hud .hud-bottom-left {
+    bottom: 24px;
+    left: 68px;
+}
+
+.viewer-hud .hud-bottom-right {
+    bottom: 24px;
+    right: 68px;
+}
+
+/* Scan line animation */
+.viewer-hud .scan-line {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(32, 200, 220, 0.15) 20%,
+        rgba(32, 200, 220, 0.3) 50%,
+        rgba(32, 200, 220, 0.15) 80%,
+        transparent 100%);
+    animation: scanMove 6s ease-in-out infinite;
+    opacity: 0.7;
+}
+
+@keyframes scanMove {
+    0%   { top: 15%; opacity: 0; }
+    10%  { opacity: 0.7; }
+    90%  { opacity: 0.7; }
+    100% { top: 85%; opacity: 0; }
+}
+
+/* Subtle pulsing ring at center */
+.viewer-hud .center-reticle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border: 1px solid rgba(32, 200, 220, 0.15);
+    border-radius: 50%;
+    animation: reticlePulse 3s ease-in-out infinite;
+}
+
+.viewer-hud .center-reticle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 4px;
+    background: rgba(32, 200, 220, 0.3);
+    border-radius: 50%;
+}
+
+@keyframes reticlePulse {
+    0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.15); }
+}
+
+/* Side status bars */
+.viewer-hud .side-bar-left,
+.viewer-hud .side-bar-right {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 120px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.viewer-hud .side-bar-left {
+    left: 24px;
+}
+
+.viewer-hud .side-bar-right {
+    right: 24px;
+}
+
+.viewer-hud .side-bar-left::after,
+.viewer-hud .side-bar-right::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    background: linear-gradient(to bottom, rgba(32, 200, 220, 0.5), transparent);
+    border-radius: 2px;
+    animation: barPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes barPulse {
+    0%, 100% { top: 0%; opacity: 0.4; }
+    50% { top: 60%; opacity: 0.8; }
 }
 
 /* Tooltip */
 .tooltip {
     position: fixed;
     pointer-events: none;
-    background: rgba(26, 26, 26, 0.88);
-    color: #fff;
+    background: rgba(10, 18, 35, 0.92);
+    color: #e0f0ff;
     padding: 8px 12px;
     border-radius: 8px;
     font-size: 12px;
     z-index: 100;
     backdrop-filter: blur(8px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 0 20px rgba(32, 200, 220, 0.15), var(--shadow-lg);
     max-width: 200px;
+    border: 1px solid rgba(32, 200, 220, 0.2);
 }
 
 .tooltip-tissue {
@@ -878,10 +1072,10 @@ input, textarea, select {
     font-weight: 600;
 }
 
-.severity-tag.normal { background: #E8F5E9; color: #2E7D32; }
-.severity-tag.mild { background: #FFF8E1; color: #F57F17; }
-.severity-tag.moderate { background: #FFF3E0; color: #E65100; }
-.severity-tag.severe { background: #FFEBEE; color: #C62828; }
+.severity-tag.normal { background: #ECEDF0; color: #5A5E68; }
+.severity-tag.mild { background: #E1F5FE; color: #0288D1; }
+.severity-tag.moderate { background: #E1F5FE; color: #0288D1; }
+.severity-tag.severe { background: #FFE8E8; color: #D50000; }
 
 /* ===== Empty State ===== */
 .empty-state {
@@ -1949,6 +2143,173 @@ input, textarea, select {
     margin-bottom: 16px;
 }
 
+/* SOAP Modal expanded size */
+.end-assessment-modal.soap-modal {
+    width: 620px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+/* SOAP Tabs */
+.soap-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--border-light);
+    padding-bottom: 0;
+}
+
+.soap-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 150ms ease;
+    margin-bottom: -2px;
+}
+
+.soap-tab:hover {
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border-radius: 6px 6px 0 0;
+}
+
+.soap-tab.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.soap-tab-label {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* SOAP Tab Content */
+.soap-tab-content {
+    display: none;
+}
+
+.soap-tab-content.active {
+    display: block;
+}
+
+/* VAS Pain Slider */
+.vas-slider-container {
+    padding: 4px 0;
+}
+
+.vas-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right,
+        #4CAF50 0%,
+        #8BC34A 20%,
+        #FFEB3B 40%,
+        #FF9800 60%,
+        #F44336 80%,
+        #B71C1C 100%);
+    outline: none;
+    cursor: pointer;
+}
+
+.vas-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border: 2px solid var(--accent-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+}
+
+.vas-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border: 2px solid var(--accent-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+}
+
+.vas-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+}
+
+/* SOAP auto-findings readonly style */
+#soap-auto-findings {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: var(--font-mono);
+}
+
+/* SOAP timeline summary in patient detail */
+.soap-timeline-summary {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.soap-timeline-summary .soap-chief {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.soap-timeline-summary .soap-vas-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.soap-vas-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+}
+
+.soap-vas-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.soap-vas-label {
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.soap-timeline-summary .soap-plan-brief {
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
 /* ========================================
    Print Styles
    ======================================== */
@@ -2128,4 +2489,1011 @@ input, textarea, select {
 
 .rap-summary-item .count {
     font-weight: 600;
+}
+
+/* ========================================
+   Posture Analysis View (자세 분석)
+   ======================================== */
+
+.posture-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .posture-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- 드롭존 --- */
+.posture-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    border: 2px dashed var(--border-medium);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    text-align: center;
+    cursor: pointer;
+    transition: all 200ms ease;
+    margin-bottom: 16px;
+}
+
+.posture-dropzone:hover,
+.posture-dropzone.dragover {
+    border-color: var(--accent-primary);
+    background: var(--accent-light);
+}
+
+.posture-dropzone svg {
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+}
+
+.posture-dropzone-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.posture-dropzone-hint {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+}
+
+/* --- 웹캠 --- */
+.posture-webcam-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.posture-webcam-area {
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+    margin-bottom: 16px;
+}
+
+.posture-webcam-area video {
+    width: 100%;
+    display: block;
+    border-radius: 10px;
+}
+
+/* --- 이미지 프리뷰 + 오버레이 --- */
+.posture-preview-area {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    margin-bottom: 16px;
+}
+
+.posture-canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+
+.posture-overlay-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* --- 로딩 --- */
+.posture-loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    margin-bottom: 16px;
+}
+
+.posture-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--border-light);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: posture-spin 0.8s linear infinite;
+}
+
+@keyframes posture-spin {
+    to { transform: rotate(360deg); }
+}
+
+.posture-loading-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* --- 에러 --- */
+.posture-error {
+    padding: 12px 16px;
+    background: #FFEBEE;
+    border: 1px solid #FFCDD2;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #C62828;
+    margin-bottom: 16px;
+}
+
+/* --- 결과 패널 --- */
+.posture-results {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 20px;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+}
+
+.posture-results::-webkit-scrollbar { width: 4px; }
+.posture-results::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 2px; }
+
+.posture-results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.posture-results-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.posture-overall-badge {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* --- 지표 카드 --- */
+.posture-metrics-section {
+    margin-bottom: 20px;
+}
+
+.posture-metric-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.posture-metric-item:last-child {
+    border-bottom: none;
+}
+
+.posture-metric-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.posture-metric-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.posture-metric-value {
+    display: block;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+    margin-top: 2px;
+}
+
+.posture-metric-bar-track {
+    width: 60px;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.posture-metric-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.posture-metric-sev {
+    font-size: 11px;
+    font-weight: 600;
+    width: 40px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* --- 영향 부위 --- */
+.posture-affected-section {
+    margin-bottom: 20px;
+}
+
+.posture-affected-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 13px;
+}
+
+.posture-affected-item:last-child {
+    border-bottom: none;
+}
+
+.posture-affected-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.posture-affected-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.posture-affected-reason {
+    flex: 1;
+    color: var(--text-tertiary);
+    font-size: 12px;
+}
+
+.posture-affected-sev {
+    font-weight: 600;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.posture-no-issues {
+    text-align: center;
+    color: var(--status-normal);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 16px 0;
+}
+
+/* --- 적용 버튼 영역 --- */
+.posture-apply-section {
+    padding-top: 16px;
+    border-top: 1px solid var(--border-light);
+}
+
+.posture-apply-section .btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.posture-apply-hint {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* --- 환자 선택 바 --- */
+.posture-patient-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.posture-patient-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.posture-patient-icon {
+    display: flex;
+    color: var(--accent-primary);
+}
+
+/* --- 경고 메시지 --- */
+.posture-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #FFF3E0;
+    border: 1px solid #FFE0B2;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #E65100;
+    margin-bottom: 12px;
+}
+
+/* ========================================
+   자세분석 사진 (환자 타임라인)
+   ======================================== */
+
+.pd-posture-section {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-top: 10px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.pd-posture-thumb {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+    flex-shrink: 0;
+}
+
+.pd-posture-thumb:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.pd-posture-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.pd-posture-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--accent-light);
+    color: var(--accent-primary);
+}
+
+.posture-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    background: #E8F5E9;
+    color: #2E7D32;
+    margin-left: 8px;
+}
+
+.pd-posture-metric {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-light);
+}
+
+/* --- 사진 확대 모달 --- */
+.photo-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    cursor: pointer;
+}
+
+.photo-modal-img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.photo-modal-close {
+    position: absolute;
+    top: 24px;
+    right: 32px;
+    font-size: 24px;
+    color: #fff;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+}
+
+/* ========================================
+   Session Timeout Warning
+   ======================================== */
+
+.timeout-warning-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.timeout-warning-modal {
+    background: var(--bg-primary);
+    border-radius: 16px;
+    padding: 32px;
+    width: 380px;
+    max-width: 90vw;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.timeout-warning-icon {
+    color: #E65100;
+    margin-bottom: 16px;
+}
+
+.timeout-warning-modal h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.timeout-warning-modal p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.timeout-warning-modal .btn-primary {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+}
+
+/* ========================================
+   Toast Notification System
+   ======================================== */
+
+.toast-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    pointer-events: auto;
+    animation: toastIn 0.3s ease forwards;
+    max-width: 380px;
+    word-break: keep-all;
+}
+
+.toast.fade-out {
+    animation: toastOut 0.3s ease forwards;
+}
+
+.toast-success { background: #2E7D32; }
+.toast-error { background: #C62828; }
+.toast-warning { background: #E65100; }
+.toast-info { background: #1565C0; }
+
+.toast-icon {
+    flex-shrink: 0;
+    display: flex;
+}
+
+.toast-message {
+    flex: 1;
+}
+
+.toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.toast-close:hover {
+    color: #fff;
+}
+
+@keyframes toastIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+/* ========================================
+   Form Validation
+   ======================================== */
+
+.form-group.error input,
+.form-group.error textarea,
+.form-group.error select {
+    border-color: var(--status-severe) !important;
+    box-shadow: 0 0 0 3px rgba(255, 23, 68, 0.12) !important;
+}
+
+.form-error-message {
+    font-size: 11px;
+    color: var(--status-severe);
+    margin-top: 4px;
+    display: block;
+}
+
+/* ========================================
+   Storage Usage Bar
+   ======================================== */
+
+.storage-usage {
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    margin-bottom: 16px;
+}
+
+.storage-usage-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.storage-usage-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.storage-usage-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    background: var(--accent-primary);
+}
+
+.storage-usage-fill.warning { background: #E65100; }
+.storage-usage-fill.danger { background: var(--status-severe); }
+
+/* ========================================
+   Confidence Bar (자세 분석 신뢰도)
+   ======================================== */
+
+.posture-confidence-section {
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.posture-confidence-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.posture-confidence-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.posture-confidence-value {
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+}
+
+.posture-confidence-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--border-light);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.posture-confidence-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.posture-confidence-warning {
+    font-size: 11px;
+    color: #E65100;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ========================================
+   3D Screenshot Button
+   ======================================== */
+
+.viewer-hud-actions {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 5;
+    pointer-events: auto;
+}
+
+.hud-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(200, 220, 240, 0.8);
+    background: rgba(10, 18, 35, 0.7);
+    border: 1px solid rgba(32, 200, 220, 0.25);
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    transition: all 150ms ease;
+}
+
+.hud-action-btn:hover {
+    color: #fff;
+    background: rgba(32, 200, 220, 0.15);
+    border-color: rgba(32, 200, 220, 0.5);
+}
+
+/* ========================================
+   Trend Chart
+   ======================================== */
+
+.trend-chart-section {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+}
+
+.trend-chart-section h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.trend-chart-container {
+    position: relative;
+    height: 220px;
+}
+
+/* ========================================
+   MediaPipe Retry Button
+   ======================================== */
+
+.posture-retry-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #FFF3E0;
+    border: 1px solid #FFE0B2;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.posture-retry-section span {
+    flex: 1;
+    font-size: 12px;
+    color: #E65100;
+}
+
+/* ========================================
+   PIN Lock Screen
+   ======================================== */
+
+.pin-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary);
+}
+
+.pin-card {
+    text-align: center;
+    max-width: 340px;
+    padding: 40px;
+}
+
+.pin-card h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.pin-card p {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-bottom: 24px;
+}
+
+.pin-input {
+    width: 180px;
+    padding: 12px 16px;
+    font-size: 24px;
+    font-family: var(--font-mono);
+    text-align: center;
+    letter-spacing: 8px;
+    border: 2px solid var(--border-light);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 150ms ease;
+}
+
+.pin-input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.pin-error {
+    font-size: 12px;
+    color: var(--status-severe);
+    margin-top: 12px;
+    min-height: 18px;
+}
+
+.pin-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+/* ========================================
+   Mobile Responsive
+   ======================================== */
+
+.hamburger-btn {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 89;
+}
+
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: flex;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 90;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+    }
+
+    .main-content {
+        width: 100vw;
+    }
+
+    .panel-view {
+        padding: 16px;
+        padding-top: 56px;
+    }
+
+    .panel-header h2 {
+        font-size: 20px;
+    }
+
+    .dashboard-stats {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .posture-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .context-panel {
+        width: 100vw;
+        min-width: 100vw;
+    }
+
+    .mapping-editor {
+        width: 100%;
+    }
+
+    .patient-toolbar {
+        flex-direction: column;
+    }
+
+    .patient-detail-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .pd-actions {
+        align-self: flex-start;
+    }
+
+    .pd-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pd-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .comparison-container {
+        grid-template-columns: 1fr;
+    }
+
+    .viewer-hud-actions {
+        bottom: 12px;
+    }
+
+    .assessment-banner {
+        font-size: 11px;
+        padding: 8px 12px;
+        gap: 6px;
+        top: 56px;
+    }
+}
+
+/* ========================================
+   Accessibility
+   ======================================== */
+
+*:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--accent-primary);
+    color: #fff;
+    padding: 8px 16px;
+    z-index: 10001;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 0 0 8px 0;
+    transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+@media (prefers-contrast: high) {
+    :root {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f0f0f0;
+        --bg-tertiary: #e0e0e0;
+        --text-primary: #000000;
+        --text-secondary: #333333;
+        --text-tertiary: #555555;
+        --border-light: #999999;
+        --border-medium: #666666;
+        --accent-primary: #005a3c;
+    }
 }

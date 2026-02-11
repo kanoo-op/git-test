@@ -49,10 +49,33 @@
         </div>
     </div>
 
+    <!-- Skip Link (Accessibility) -->
+    <a href="#app" class="skip-link">메인 콘텐츠로 건너뛰기</a>
+
+    <!-- PIN Lock Overlay -->
+    <div id="pin-overlay" class="pin-overlay" style="display:none;">
+        <div class="pin-card">
+            <h2>PostureView</h2>
+            <p>환자 데이터 보호를 위해 PIN을 입력하세요</p>
+            <input type="password" id="pin-input" class="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="off">
+            <div class="pin-error" id="pin-error"></div>
+            <div class="pin-actions">
+                <button id="btn-pin-submit" class="btn-primary">확인</button>
+                <button id="btn-pin-setup" class="btn-secondary" style="display:none;">PIN 설정</button>
+            </div>
+        </div>
+    </div>
+
     <!-- App Container -->
     <div id="app" class="app" style="display:none;">
+        <!-- Mobile Hamburger -->
+        <button id="hamburger-btn" class="hamburger-btn" aria-label="메뉴 열기">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
         <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar">
+        <aside id="sidebar" class="sidebar" role="navigation" aria-label="주요 네비게이션">
             <div class="sidebar-header">
                 <div class="logo">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -76,6 +99,10 @@
                 <button class="nav-item" data-view="patients">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     <span>환자 관리</span>
+                </button>
+                <button class="nav-item" data-view="posture">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 100 6 3 3 0 000-6z"/><path d="M12 8v8"/><path d="M9 22l3-6 3 6"/><path d="M6 13l6-1 6 1"/></svg>
+                    <span>자세 분석</span>
                 </button>
                 <button class="nav-item" data-view="mapping">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -178,10 +205,31 @@
         </aside>
 
         <!-- Main Viewer Area -->
-        <main class="main-content">
+        <main class="main-content" role="main" aria-label="주요 콘텐츠">
             <!-- 3D Viewer -->
             <div id="viewer-container" class="viewer-container">
                 <canvas id="three-canvas"></canvas>
+                <!-- Analysis HUD Overlay -->
+                <div class="viewer-hud">
+                    <div class="corner-tl"></div>
+                    <div class="corner-tr"></div>
+                    <div class="corner-bl"></div>
+                    <div class="corner-br"></div>
+                    <span class="hud-label hud-top-left">PostureView Analysis</span>
+                    <span class="hud-label hud-top-right">3D Anatomical Model</span>
+                    <span class="hud-label hud-bottom-left">Clinical Mode</span>
+                    <span class="hud-label hud-bottom-right" id="hud-status">Ready</span>
+                    <div class="scan-line"></div>
+                    <div class="center-reticle"></div>
+                    <div class="side-bar-left"></div>
+                    <div class="side-bar-right"></div>
+                    <div class="viewer-hud-actions">
+                        <button id="btn-screenshot" class="hud-action-btn" title="3D 뷰 스크린샷">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            스크린샷
+                        </button>
+                    </div>
+                </div>
                 <!-- Hover Tooltip -->
                 <div id="tooltip" class="tooltip" style="display:none;">
                     <div class="tooltip-tissue" id="tooltip-tissue">-</div>
@@ -356,6 +404,14 @@
                     <div class="pd-info-grid" id="pd-info-grid"></div>
                 </div>
                 <div class="pd-stats" id="pd-stats"></div>
+                <!-- Trend Chart -->
+                <div id="trend-chart-section" class="trend-chart-section" style="display:none;">
+                    <h3>평가 추이</h3>
+                    <div class="trend-chart-container">
+                        <canvas id="trend-chart"></canvas>
+                    </div>
+                </div>
+
                 <div class="pd-assessments-section">
                     <div class="assessments-header">
                         <h3>평가 기록</h3>
@@ -370,14 +426,227 @@
                 <div id="comparison-container" class="comparison-container" style="display:none;"></div>
             </div>
 
-            <!-- End Assessment Modal -->
-            <div id="end-assessment-overlay" class="end-assessment-overlay" style="display:none;">
-                <div class="end-assessment-modal">
-                    <h3>평가 종료</h3>
-                    <div class="form-group">
-                        <label>전체 평가 메모</label>
-                        <textarea id="input-overall-notes" rows="4" placeholder="전반적인 소견, 치료 계획, 다음 평가 시 확인 사항 등..."></textarea>
+            <!-- Posture Analysis View -->
+            <div id="posture-analysis-view" class="panel-view" style="display:none;">
+                <div class="panel-header">
+                    <h2>자세 분석</h2>
+                </div>
+
+                <!-- 환자 선택 바 -->
+                <div id="posture-patient-bar" class="posture-patient-bar">
+                    <div id="posture-patient-info" class="posture-patient-info">
+                        <span class="posture-patient-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </span>
+                        <span id="posture-patient-name">환자를 선택해주세요</span>
                     </div>
+                    <button id="posture-select-patient-btn" class="btn-secondary btn-sm-pad">환자 선택</button>
+                </div>
+
+                <div class="posture-layout">
+                    <!-- 좌측: 입력 영역 -->
+                    <div class="posture-input-area">
+                        <!-- 사진 업로드 -->
+                        <div id="posture-dropzone" class="posture-dropzone">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                            <p class="posture-dropzone-title">사진을 드래그하거나 선택하세요</p>
+                            <p class="posture-dropzone-hint">전신이 보이는 정면/측면 사진 권장</p>
+                            <button id="posture-browse-btn" class="btn-secondary btn-sm-pad">파일 선택</button>
+                            <input type="file" id="posture-file-input" accept="image/*" style="display:none;">
+                        </div>
+
+                        <!-- 웹캠 -->
+                        <div class="posture-webcam-controls">
+                            <button id="posture-webcam-start" class="btn-secondary btn-sm-pad">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                                웹캠 촬영
+                            </button>
+                            <button id="posture-webcam-capture" class="btn-primary btn-sm-pad" style="display:none;">캡처</button>
+                            <button id="posture-webcam-stop" class="btn-secondary btn-sm-pad" style="display:none;">정지</button>
+                        </div>
+                        <div id="posture-webcam-area" class="posture-webcam-area" style="display:none;">
+                            <video id="posture-webcam-video" autoplay playsinline muted></video>
+                        </div>
+
+                        <!-- 이미지 프리뷰 + 오버레이 -->
+                        <div id="posture-preview-area" class="posture-preview-area" style="display:none;">
+                            <canvas id="posture-image-canvas" class="posture-canvas"></canvas>
+                            <canvas id="posture-overlay-canvas" class="posture-overlay-canvas"></canvas>
+                        </div>
+
+                        <!-- 로딩 -->
+                        <div id="posture-loading" class="posture-loading" style="display:none;">
+                            <div class="posture-spinner"></div>
+                            <span class="posture-loading-text">분석 중...</span>
+                        </div>
+
+                        <!-- 에러 -->
+                        <div id="posture-error" class="posture-error" style="display:none;"></div>
+                    </div>
+
+                    <!-- 우측: 결과 패널 -->
+                    <div id="posture-results" class="posture-results" style="display:none;">
+                        <!-- 동적 렌더링 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- End Assessment Modal (SOAP Notes) -->
+            <div id="end-assessment-overlay" class="end-assessment-overlay" style="display:none;">
+                <div class="end-assessment-modal soap-modal">
+                    <h3>평가 종료 - SOAP 노트</h3>
+                    <!-- SOAP Tabs -->
+                    <div class="soap-tabs">
+                        <button class="soap-tab active" data-soap-tab="subjective">S <span class="soap-tab-label">주관적</span></button>
+                        <button class="soap-tab" data-soap-tab="objective">O <span class="soap-tab-label">객관적</span></button>
+                        <button class="soap-tab" data-soap-tab="assessment">A <span class="soap-tab-label">평가</span></button>
+                        <button class="soap-tab" data-soap-tab="plan">P <span class="soap-tab-label">계획</span></button>
+                    </div>
+
+                    <!-- S: Subjective -->
+                    <div class="soap-tab-content active" id="soap-subjective">
+                        <div class="form-group">
+                            <label>주호소 (Chief Complaint)</label>
+                            <input type="text" id="soap-chief-complaint" placeholder="환자가 호소하는 주요 증상...">
+                        </div>
+                        <div class="form-group">
+                            <label>통증 척도 (VAS): <span id="soap-vas-value">0</span>/10</label>
+                            <div class="vas-slider-container">
+                                <input type="range" id="soap-pain-scale" class="vas-slider" min="0" max="10" step="1" value="0">
+                                <div class="vas-labels">
+                                    <span>0 통증없음</span>
+                                    <span>5 중등도</span>
+                                    <span>10 극심</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>증상 설명</label>
+                            <textarea id="soap-symptom-desc" rows="2" placeholder="증상의 양상, 빈도, 기간 등..."></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>통증 위치</label>
+                                <input type="text" id="soap-pain-location" placeholder="예: 요추 4-5번">
+                            </div>
+                            <div class="form-group">
+                                <label>발병 시기</label>
+                                <input type="text" id="soap-onset" placeholder="예: 2주 전">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>악화 요인</label>
+                                <input type="text" id="soap-aggravating" placeholder="예: 장시간 앉기">
+                            </div>
+                            <div class="form-group">
+                                <label>완화 요인</label>
+                                <input type="text" id="soap-relieving" placeholder="예: 휴식, 냉찜질">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- O: Objective -->
+                    <div class="soap-tab-content" id="soap-objective">
+                        <div class="form-group">
+                            <label>자동 소견 (3D 선택 + 자세분석)</label>
+                            <textarea id="soap-auto-findings" rows="3" readonly placeholder="평가 데이터에서 자동 생성됩니다..."></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>ROM (관절가동범위)</label>
+                                <input type="text" id="soap-rom" placeholder="예: 요추 굴곡 40°">
+                            </div>
+                            <div class="form-group">
+                                <label>MMT (도수근력검사)</label>
+                                <input type="text" id="soap-mmt" placeholder="예: hip flexor 4/5">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>특수검사</label>
+                            <input type="text" id="soap-special-tests" placeholder="예: SLR (+) 좌측 60°">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>촉진</label>
+                                <input type="text" id="soap-palpation" placeholder="예: L4-5 주위 압통">
+                            </div>
+                            <div class="form-group">
+                                <label>보행</label>
+                                <input type="text" id="soap-gait" placeholder="예: 정상 보행">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>추가 소견</label>
+                            <textarea id="soap-additional-findings" rows="2" placeholder="기타 객관적 관찰 사항..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- A: Assessment -->
+                    <div class="soap-tab-content" id="soap-assessment">
+                        <div class="form-group">
+                            <label>임상 소견 (Clinical Impression)</label>
+                            <textarea id="soap-clinical-impression" rows="3" placeholder="종합적인 임상 판단..."></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>진행 수준</label>
+                                <select id="soap-progress-level">
+                                    <option value="initial">초기 평가</option>
+                                    <option value="improving">호전</option>
+                                    <option value="plateau">정체</option>
+                                    <option value="worsening">악화</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>기능 수준</label>
+                                <input type="text" id="soap-functional-level" placeholder="예: 독립적 보행 가능">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>목표</label>
+                            <textarea id="soap-goals" rows="2" placeholder="단기/장기 치료 목표..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- P: Plan -->
+                    <div class="soap-tab-content" id="soap-plan">
+                        <div class="form-group">
+                            <label>치료 계획</label>
+                            <textarea id="soap-treatment" rows="2" placeholder="치료 방법, 기법 등..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>홈 운동 프로그램 (HEP)</label>
+                            <textarea id="soap-hep" rows="2" placeholder="가정 운동 지시 사항..."></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>빈도</label>
+                                <input type="text" id="soap-frequency" placeholder="예: 주 3회">
+                            </div>
+                            <div class="form-group">
+                                <label>기간</label>
+                                <input type="text" id="soap-duration" placeholder="예: 4주">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>다음 내원</label>
+                            <input type="text" id="soap-next-visit" placeholder="예: 3일 후">
+                        </div>
+                        <div class="form-group">
+                            <label>주의사항</label>
+                            <textarea id="soap-precautions" rows="2" placeholder="주의해야 할 활동, 자세 등..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>의뢰</label>
+                            <input type="text" id="soap-referral" placeholder="예: 정형외과 협진">
+                        </div>
+                    </div>
+
                     <div class="form-actions">
                         <button id="btn-confirm-end-assessment" class="btn-primary">저장 후 종료</button>
                         <button id="btn-cancel-end-assessment" class="btn-secondary">취소</button>
@@ -448,7 +717,7 @@
         </main>
 
         <!-- Context Panel (Right Side) -->
-        <aside id="context-panel" class="context-panel">
+        <aside id="context-panel" class="context-panel" role="complementary" aria-label="선택 상세정보">
             <div class="context-header">
                 <h3 id="context-title">선택 상세정보</h3>
                 <button id="btn-close-context" class="btn-icon" title="닫기">
@@ -483,7 +752,6 @@
                     <select id="select-severity">
                         <option value="normal">정상</option>
                         <option value="mild">경도</option>
-                        <option value="moderate">중등도</option>
                         <option value="severe">중증</option>
                     </select>
                 </div>
@@ -501,6 +769,28 @@
             </div>
         </aside>
     </div>
+
+    <!-- Session Timeout Warning Modal -->
+    <div id="timeout-warning-modal" class="timeout-warning-overlay" style="display:none;">
+        <div class="timeout-warning-modal">
+            <div class="timeout-warning-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            </div>
+            <h3>세션 만료 경고</h3>
+            <p>2분 후 자동 로그아웃됩니다.<br>계속 사용하시려면 연장 버튼을 클릭하세요.</p>
+            <button id="btn-extend-session" class="btn-primary">세션 연장</button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- CDN Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
     <script type="module" src="js/app.js"></script>
 </body>
