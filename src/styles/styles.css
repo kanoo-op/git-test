@@ -5071,50 +5071,375 @@ input, textarea, select {
    Reports View
    ======================================== */
 
-.reports-card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 20px;
-    padding: 0 24px;
+/* Patient selector bar */
+.rpt-patient-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-light);
 }
 
-.report-type-card {
+.rpt-patient-bar label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.rpt-select {
+    flex: 1;
+    max-width: 360px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.rpt-select:focus {
+    border-color: var(--accent-primary);
+}
+
+/* Card grid */
+.rpt-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    padding: 20px 24px;
+}
+
+.rpt-type-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-light);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
+}
+
+.rpt-type-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.rpt-card-active {
+    border-color: var(--accent-primary);
+    background: var(--accent-light);
+    box-shadow: var(--shadow-md);
+}
+
+.rpt-type-icon {
+    color: var(--accent-primary);
+    margin-bottom: 12px;
+}
+
+.rpt-type-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.rpt-type-card p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Detail panel */
+.rpt-detail {
+    padding: 0 24px 24px;
+}
+
+.rpt-section {
     background: var(--bg-secondary);
     border: 1px solid var(--border-light);
     border-radius: 12px;
     padding: 24px;
-    text-align: center;
-    transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
+    margin-top: 8px;
 }
 
-.report-type-card:hover {
-    border-color: var(--border-medium);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+.rpt-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
-.report-type-icon {
-    color: var(--accent-primary);
+.rpt-section-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.rpt-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Info grid */
+.rpt-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
     margin-bottom: 16px;
 }
 
-.report-type-card h3 {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 8px;
+.rpt-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 14px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
 }
 
-.report-type-card p {
+.rpt-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.rpt-info-item > span:last-child {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Severity tags */
+.rpt-sev-dist {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.rpt-sev-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Table */
+.rpt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.rpt-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--border-light);
+}
+
+.rpt-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-primary);
+}
+
+.rpt-table tbody tr:hover {
+    background: var(--bg-primary);
+}
+
+/* SOAP summary in preview */
+.rpt-soap-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 14px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+}
+
+.rpt-soap-item {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
     font-size: 13px;
     color: var(--text-secondary);
     line-height: 1.5;
+}
+
+.rpt-soap-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: var(--accent-primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* Posture metrics */
+.rpt-metrics {
     margin-bottom: 16px;
 }
 
-.report-type-card button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.rpt-metrics h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.rpt-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+}
+
+.rpt-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+}
+
+.rpt-metric > span:last-child {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-primary);
+}
+
+/* Progress report */
+.rpt-change-summary {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.rpt-change-tag {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.rpt-change-improved {
+    background: rgba(76, 175, 80, 0.12);
+    color: #2e7d32;
+}
+
+.rpt-change-unchanged {
+    background: rgba(158, 158, 158, 0.12);
+    color: #757575;
+}
+
+.rpt-change-worsened {
+    background: rgba(244, 67, 54, 0.12);
+    color: #c62828;
+}
+
+.rpt-chart-wrap {
+    position: relative;
+    height: 260px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+}
+
+/* Referral form */
+.rpt-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.rpt-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rpt-form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.rpt-textarea {
+    padding: 10px 14px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    resize: vertical;
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.rpt-textarea:focus {
+    border-color: var(--accent-primary);
+}
+
+.rpt-input {
+    padding: 9px 14px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.rpt-input:focus {
+    border-color: var(--accent-primary);
+}
+
+/* Empty state */
+.rpt-empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-tertiary);
+    font-size: 13px;
+}
+
+/* Preview */
+.rpt-preview {
+    margin-top: 4px;
 }
 
 /* ========================================

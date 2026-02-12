@@ -13,6 +13,7 @@ import {
 } from '../patients/AssessmentManager.js';
 import { renderMappingEditor, showNewRegionForm, hideNewRegionForm, saveNewRegion, startAssignMode, stopAssignMode, deleteSelectedRegion, exportMapping, initMappingImportButtons } from '../mapping/MappingEditor.js';
 import { hideExerciseRecommendations } from './ExerciseRecommendation.js';
+import { refreshReportPanel } from './ReportPanel.js';
 
 // ======== Shared State ========
 
@@ -163,6 +164,7 @@ export function switchView(view) {
             break;
         case 'reports':
             document.getElementById('reports-view').style.display = 'block';
+            refreshReportPanel();
             break;
         case 'mapping':
             document.getElementById('viewer-container').style.display = 'block';

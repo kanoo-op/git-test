@@ -22,6 +22,7 @@ import { initMultiView, setViewMode } from './core/MultiView.js';
 import { initExerciseRecPanel, hideExerciseRecommendations } from './ui/ExerciseRecommendation.js';
 import { initExerciseMode, stopExerciseMode } from './pose/ExerciseMode.js';
 import { initExerciseLibrary } from './ui/ExerciseLibrary.js';
+import { initReportPanel } from './ui/ReportPanel.js';
 
 // Toast + Video Modal (self-registering on window)
 import './ui/Toast.js';
@@ -102,6 +103,7 @@ loadModel(
         initExerciseRecPanel();
         initExerciseMode();
         initExerciseLibrary();
+        initReportPanel();
         initViewModeToggle();
         initRenderModeToggle();
         initMobileMenu();

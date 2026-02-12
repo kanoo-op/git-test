@@ -937,41 +937,48 @@
                 <div class="panel-header">
                     <h2>리포트</h2>
                 </div>
-                <div class="reports-card-grid">
-                    <div class="report-type-card">
-                        <div class="report-type-icon">
+
+                <!-- Patient Selector Bar -->
+                <div class="rpt-patient-bar">
+                    <label for="rpt-patient-select">환자 선택</label>
+                    <select id="rpt-patient-select" class="rpt-select">
+                        <option value="">환자를 선택하세요</option>
+                    </select>
+                </div>
+
+                <!-- Report Type Cards -->
+                <div class="rpt-card-grid">
+                    <div class="rpt-type-card" data-type="assessment">
+                        <div class="rpt-type-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <path d="M12 2a3 3 0 100 6 3 3 0 000-6z"/><path d="M12 8v8"/><path d="M9 22l3-6 3 6"/><path d="M6 13l6-1 6 1"/>
                             </svg>
                         </div>
                         <h3>자세분석 리포트</h3>
-                        <p>자세 촬영 결과와 관절 각도 분석을 포함한 상세 리포트를 생성합니다.</p>
-                        <button class="btn-primary btn-sm-pad" disabled>Generate</button>
+                        <p>부위별 심각도, SOAP 노트, 자세분석 결과를 포함한 상세 리포트</p>
                     </div>
-                    <div class="report-type-card">
-                        <div class="report-type-icon">
+                    <div class="rpt-type-card" data-type="progress">
+                        <div class="rpt-type-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                             </svg>
                         </div>
                         <h3>경과 리포트</h3>
-                        <p>환자의 평가 기록 추이와 치료 경과를 비교 분석한 리포트를 생성합니다.</p>
-                        <button class="btn-primary btn-sm-pad" disabled>Generate</button>
+                        <p>평가 히스토리 기반 심각도 추이와 치료 경과 비교 분석</p>
                     </div>
-                    <div class="report-type-card">
-                        <div class="report-type-icon">
+                    <div class="rpt-type-card" data-type="referral">
+                        <div class="rpt-type-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/>
                             </svg>
                         </div>
                         <h3>의뢰 리포트</h3>
-                        <p>타 의료기관 의뢰 시 첨부할 수 있는 공식 리포트를 생성합니다.</p>
-                        <button class="btn-primary btn-sm-pad" disabled>Generate</button>
+                        <p>타 의료기관 의뢰 시 첨부할 수 있는 공식 의뢰서</p>
                     </div>
                 </div>
-                <div class="placeholder-empty" style="margin-top:24px;">
-                    <p>리포트 생성 기능은 향후 업데이트에서 활성화됩니다.</p>
-                </div>
+
+                <!-- Report Detail Panel -->
+                <div id="rpt-detail" class="rpt-detail"></div>
             </div>
 
             <!-- Mapping Editor (right panel overlaying viewer) -->
