@@ -210,7 +210,8 @@ function renderAssessmentExercises(assessment) {
                 <span class="pd-rec-ex-name">${escapeHtml(e.name)}</span>
                 <span class="pd-rec-ex-right">
                     <span class="exercise-difficulty difficulty-${DIFF_CLASS[e.difficulty] || 'medium'}">${escapeHtml(e.difficulty)}</span>
-                    <span class="pd-rec-play"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>
+                    <span class="pd-rec-play" title="영상 보기"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>
+                    <span class="pd-rec-start" data-start-exercise="${escapeHtml(e.name)}" title="운동하기"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M6 8H5a4 4 0 000 8h1"/><line x1="6" y1="12" x2="18" y2="12"/></svg></span>
                 </span>
             </div>
         `).join('');
@@ -387,7 +388,16 @@ function renderAssessmentTimeline(patient) {
     });
 
     timeline.querySelectorAll('.pd-rec-exercise').forEach(item => {
-        item.addEventListener('click', () => {
+        // 운동하기 버튼
+        item.querySelector('.pd-rec-start')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const name = item.dataset.exercise;
+            if (window.startExerciseMode) window.startExerciseMode(name);
+        });
+
+        // 영상 보기 (기본 클릭)
+        item.addEventListener('click', (e) => {
+            if (e.target.closest('.pd-rec-start')) return;
             const name = item.dataset.exercise;
             const videoId = item.dataset.videoId;
             const difficulty = item.dataset.difficulty;

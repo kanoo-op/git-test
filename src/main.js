@@ -20,6 +20,7 @@ import { initRealtimePoseUI } from './pose/RealtimeUI.js';
 import { initPoseDashboard, updateDashboardFromAnalysis, refreshDashboardCharts } from './pose/PoseDashboard.js';
 import { initMultiView, setViewMode } from './core/MultiView.js';
 import { initExerciseRecPanel, hideExerciseRecommendations } from './ui/ExerciseRecommendation.js';
+import { initExerciseMode, stopExerciseMode } from './pose/ExerciseMode.js';
 
 // Toast + Video Modal (self-registering on window)
 import './ui/Toast.js';
@@ -98,6 +99,7 @@ loadModel(
         window._updateDashboardFromAnalysis = updateDashboardFromAnalysis;
         initMultiView(canvas, scene, camera, bounds.center);
         initExerciseRecPanel();
+        initExerciseMode();
         initViewModeToggle();
         initRenderModeToggle();
         initMobileMenu();
@@ -275,6 +277,11 @@ function initKeyboardShortcuts() {
         }
 
         if (e.key === 'Escape') {
+            const exerciseMode = document.getElementById('exercise-mode-overlay');
+            if (exerciseMode && exerciseMode.style.display !== 'none') {
+                stopExerciseMode();
+                return;
+            }
             const devSettings = document.getElementById('dev-settings-overlay');
             if (devSettings && devSettings.style.display !== 'none') {
                 devSettings.style.display = 'none';

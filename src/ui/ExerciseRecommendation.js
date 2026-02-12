@@ -73,9 +73,14 @@ export function showExerciseRecommendations(regionMap) {
                     <span class="rec-exercise-name">${esc(e.name)}</span>
                     <span class="rec-exercise-diff difficulty-${DIFF_CLASS[e.difficulty] || 'medium'}">${esc(e.difficulty)}</span>
                 </div>
-                <span class="rec-exercise-play">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                </span>
+                <div class="rec-exercise-actions">
+                    <span class="rec-exercise-play" title="영상 보기">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </span>
+                    <span class="rec-exercise-start" data-start-exercise="${esc(e.name)}" title="운동하기">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M6 8H5a4 4 0 000 8h1"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+                    </span>
+                </div>
             </div>
         `).join('');
 
@@ -94,7 +99,29 @@ export function showExerciseRecommendations(regionMap) {
 
     // 비디오 클릭 바인딩
     listEl.querySelectorAll('.rec-exercise-item').forEach(item => {
-        item.addEventListener('click', () => {
+        // 영상 보기
+        item.querySelector('.rec-exercise-play')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const name = item.dataset.exercise;
+            const videoId = item.dataset.videoId;
+            const difficulty = item.dataset.difficulty;
+            if (window.openExerciseVideo) {
+                window.openExerciseVideo(name, videoId, difficulty);
+            }
+        });
+
+        // 운동하기
+        item.querySelector('.rec-exercise-start')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const name = item.dataset.exercise;
+            if (window.startExerciseMode) {
+                window.startExerciseMode(name);
+            }
+        });
+
+        // 아이템 자체 클릭 → 영상 보기 (기본 동작)
+        item.addEventListener('click', (e) => {
+            if (e.target.closest('.rec-exercise-start')) return;
             const name = item.dataset.exercise;
             const videoId = item.dataset.videoId;
             const difficulty = item.dataset.difficulty;

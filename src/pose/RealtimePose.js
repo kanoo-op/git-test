@@ -341,3 +341,10 @@ function clearLiveHighlights() {
 export function isRealtimeRunning() {
     return running;
 }
+
+/**
+ * VIDEO 모드 PoseLandmarker 인스턴스 반환 (운동 모드 등 외부 사용)
+ */
+export function getVideoLandmarker() {
+    return videoLandmarker;
+}

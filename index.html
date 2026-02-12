@@ -1099,10 +1099,69 @@
             </div>
             <div class="video-modal-footer">
                 <span id="video-modal-difficulty" class="video-modal-difficulty"></span>
+                <button id="video-modal-exercise-btn" class="video-modal-exercise-btn" title="웹캠으로 운동 자세 확인">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M6 8H5a4 4 0 000 8h1"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+                    운동하기
+                </button>
                 <a id="video-modal-yt-link" class="video-modal-yt-link" href="#" target="_blank" rel="noopener">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     YouTube에서 보기
                 </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exercise Mode Overlay -->
+    <div id="exercise-mode-overlay" class="exercise-mode-overlay" style="display:none;">
+        <div class="exercise-mode-container">
+            <div class="exercise-mode-header">
+                <div class="em-header-left">
+                    <span class="em-live-badge">LIVE</span>
+                    <h3 id="exercise-mode-title">운동 모드</h3>
+                    <span id="exercise-mode-preset-label" class="em-preset-label">직립 자세</span>
+                </div>
+                <div class="em-header-right">
+                    <span id="exercise-mode-timer" class="em-timer">00:00</span>
+                    <button id="btn-close-exercise-mode" class="em-close-btn" aria-label="닫기">&times;</button>
+                </div>
+            </div>
+            <div class="exercise-mode-body">
+                <div class="exercise-mode-camera-area">
+                    <video id="exercise-mode-video" autoplay playsinline muted></video>
+                    <canvas id="exercise-mode-canvas"></canvas>
+                    <div id="exercise-mode-status" class="em-status" style="display:none;">카메라 연결 중...</div>
+                    <div class="em-score-overlay">
+                        <svg width="100" height="100" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="6"/>
+                            <circle id="exercise-mode-score-circle" cx="50" cy="50" r="40" fill="none" stroke="#2ecc71" stroke-width="6"
+                                stroke-dasharray="251.3" stroke-dashoffset="251.3" stroke-linecap="round"
+                                transform="rotate(-90 50 50)"/>
+                        </svg>
+                        <div class="em-score-text">
+                            <span id="exercise-mode-score-value" class="em-score-value">0</span>
+                            <span class="em-score-label">점</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="exercise-mode-feedback">
+                    <div class="em-feedback-header">
+                        <h4>관절 각도 피드백</h4>
+                        <div class="em-legend">
+                            <span class="em-legend-item"><span class="em-dot em-dot-good"></span>적합</span>
+                            <span class="em-legend-item"><span class="em-dot em-dot-warning"></span>주의</span>
+                            <span class="em-legend-item"><span class="em-dot em-dot-bad"></span>교정필요</span>
+                        </div>
+                    </div>
+                    <div id="exercise-mode-joints" class="em-joints-list"></div>
+                    <div class="em-tips">
+                        <h5>운동 팁</h5>
+                        <ul>
+                            <li>전신이 카메라에 보이도록 위치하세요</li>
+                            <li>밝은 조명에서 촬영하면 인식률이 높아집니다</li>
+                            <li>초록색 = 올바른 자세, 빨간색 = 교정 필요</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
