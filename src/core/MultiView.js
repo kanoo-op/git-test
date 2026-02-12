@@ -89,6 +89,22 @@ export function initMultiView(canvas, scene, existingCamera, modelCenter) {
 }
 
 /**
+ * 다중 뷰 정리 (이벤트 리스너 제거 + sub controls dispose)
+ */
+export function disposeMultiView() {
+    if (canvasEl) {
+        canvasEl.removeEventListener('pointerdown', onPointerDown);
+        canvasEl.removeEventListener('pointermove', onPointerMoveForViewport);
+    }
+    for (let i = 1; i < viewports.length; i++) {
+        if (viewports[i].controls) {
+            viewports[i].controls.dispose();
+        }
+    }
+    viewports.length = 0;
+}
+
+/**
  * 뷰 모드 전환
  */
 export function setViewMode(mode) {

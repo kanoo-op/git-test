@@ -298,6 +298,7 @@ function calcAngleFromVertical(top, bottom) {
 }
 
 export function classifySeverity(value, mild, moderate, severe) {
+    if (typeof value !== 'number' || !isFinite(value) || value < 0) return 'normal';
     if (value >= severe) return 'severe';
     if (value >= moderate) return 'moderate';
     if (value >= mild) return 'mild';

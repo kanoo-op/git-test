@@ -55,8 +55,25 @@ def require_min_role(min_role: str):
     return _check
 
 
+import ipaddress
+
+# Only trust X-Forwarded-For when request comes from known proxies (Docker/localhost)
+_TRUSTED_PROXIES = {"127.0.0.1", "::1", "172.17.0.1", "10.0.0.1"}
+
+
 def get_client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    client_ip = request.client.host if request.client else "unknown"
+
+    # Only trust X-Forwarded-For if the direct client is a trusted proxy
+    if client_ip in _TRUSTED_PROXIES:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            candidate = forwarded.split(",")[0].strip()
+            # Validate it looks like a real IP address
+            try:
+                ipaddress.ip_address(candidate)
+                return candidate
+            except ValueError:
+                pass
+
+    return client_ip

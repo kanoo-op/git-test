@@ -49,12 +49,25 @@ async def list_patients(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
 ):
-    query = select(Patient)
+    # Escape ILIKE special characters to prevent pattern injection
+    safe_q = q.replace("%", r"\%").replace("_", r"\_") if q else ""
+
+    # Subquery: assessment count per patient (single query instead of N+1)
+    assessment_count_sq = (
+        select(Assessment.patient_id, func.count(Assessment.id).label("acount"))
+        .group_by(Assessment.patient_id)
+        .subquery()
+    )
+
+    query = (
+        select(Patient, func.coalesce(assessment_count_sq.c.acount, 0).label("acount"))
+        .outerjoin(assessment_count_sq, Patient.id == assessment_count_sq.c.patient_id)
+    )
     count_query = select(func.count(Patient.id))
 
-    if q:
-        query = query.where(Patient.name.ilike(f"%{q}%"))
-        count_query = count_query.where(Patient.name.ilike(f"%{q}%"))
+    if safe_q:
+        query = query.where(Patient.name.ilike(f"%{safe_q}%"))
+        count_query = count_query.where(Patient.name.ilike(f"%{safe_q}%"))
 
     # Sorting
     sort_col = {
@@ -77,16 +90,9 @@ async def list_patients(
     query = query.offset(offset).limit(limit)
 
     result = await db.execute(query)
-    patients = result.scalars().all()
+    rows = result.all()
 
-    # Get assessment counts
-    items = []
-    for p in patients:
-        count_result = await db.execute(
-            select(func.count(Assessment.id)).where(Assessment.patient_id == p.id)
-        )
-        acount = count_result.scalar()
-        items.append(_decrypt_patient_out(p, acount))
+    items = [_decrypt_patient_out(row.Patient, row.acount) for row in rows]
 
     return PatientListResponse(items=items, total=total, page=page, limit=limit)
 

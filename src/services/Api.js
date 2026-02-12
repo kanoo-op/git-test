@@ -93,7 +93,7 @@ async function request(method, path, body = null, options = {}) {
 
     let response = await fetch(url, fetchOptions);
 
-    // Auto-refresh on 401
+    // Auto-refresh on 401 (with mutex to prevent concurrent refresh attempts)
     if (response.status === 401 && getRefreshTokenValue()) {
         const refreshed = await tryRefreshToken();
         if (refreshed) {
@@ -128,26 +128,39 @@ async function request(method, path, body = null, options = {}) {
     return response;
 }
 
+let _refreshPromise = null;
+
 async function tryRefreshToken() {
-    try {
-        const rt = getRefreshTokenValue();
-        if (!rt) return false;
-
-        const response = await fetch(`${API_BASE}/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh_token: rt }),
-        });
-
-        if (!response.ok) return false;
-
-        const data = await response.json();
-        setTokens(data.access_token, data.refresh_token);
-        setCurrentUser(data.user);
-        return true;
-    } catch {
-        return false;
+    // Mutex: if a refresh is already in progress, wait for it instead of firing another
+    if (_refreshPromise) {
+        return _refreshPromise;
     }
+
+    _refreshPromise = (async () => {
+        try {
+            const rt = getRefreshTokenValue();
+            if (!rt) return false;
+
+            const response = await fetch(`${API_BASE}/auth/refresh`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh_token: rt }),
+            });
+
+            if (!response.ok) return false;
+
+            const data = await response.json();
+            setTokens(data.access_token, data.refresh_token);
+            setCurrentUser(data.user);
+            return true;
+        } catch {
+            return false;
+        } finally {
+            _refreshPromise = null;
+        }
+    })();
+
+    return _refreshPromise;
 }
 
 export class ApiError extends Error {
@@ -260,16 +273,27 @@ export async function uploadPhoto(patientId, assessmentId, blob, mimeType = 'ima
     return request('POST', `/patients/${patientId}/assessments/${assessmentId}/photo`, formData);
 }
 
+const _activePhotoUrls = new Set();
+
 export async function getPhotoUrl(patientId, assessmentId) {
     try {
         const response = await request('GET', `/patients/${patientId}/assessments/${assessmentId}/photo`);
         if (response instanceof Response) {
             const blob = await response.blob();
-            return URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
+            _activePhotoUrls.add(url);
+            return url;
         }
         return null;
     } catch {
         return null;
+    }
+}
+
+export function revokePhotoUrl(url) {
+    if (url && _activePhotoUrls.has(url)) {
+        URL.revokeObjectURL(url);
+        _activePhotoUrls.delete(url);
     }
 }
 

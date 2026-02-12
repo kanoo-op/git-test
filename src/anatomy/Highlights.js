@@ -515,6 +515,11 @@ export function startPulseHighlight(meshes, regionKey) {
 }
 
 function animatePulse() {
+    if (pulsingMeshes.size === 0) {
+        pulseAnimId = null;
+        return;
+    }
+
     const t = Date.now() * 0.005;
     const factor = 0.3 + (Math.sin(t) * 0.5 + 0.5) * 0.7; // 0.3 ~ 1.0
 

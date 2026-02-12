@@ -117,8 +117,12 @@ async def change_password(
     if not verify_password(body.current_password, user.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
 
-    if len(body.new_password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if len(body.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    if not any(c.isupper() for c in body.new_password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not any(c.isdigit() for c in body.new_password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one digit")
 
     user.password_hash = hash_password(body.new_password)
     await db.commit()

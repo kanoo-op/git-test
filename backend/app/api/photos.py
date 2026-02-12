@@ -34,10 +34,23 @@ async def upload_photo(
     if file.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {', '.join(ALLOWED_MIME_TYPES)}")
 
-    # Read data
-    data = await file.read()
-    if len(data) > settings.MAX_PHOTO_SIZE:
+    # Check Content-Length header before reading full file into memory
+    if file.size is not None and file.size > settings.MAX_PHOTO_SIZE:
         raise HTTPException(status_code=400, detail=f"File too large. Max {settings.MAX_PHOTO_SIZE // (1024*1024)}MB")
+
+    # Read data in chunks to prevent memory exhaustion
+    max_size = settings.MAX_PHOTO_SIZE
+    chunks = []
+    total = 0
+    while True:
+        chunk = await file.read(1024 * 256)  # 256KB chunks
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_size:
+            raise HTTPException(status_code=400, detail=f"File too large. Max {max_size // (1024*1024)}MB")
+        chunks.append(chunk)
+    data = b"".join(chunks)
 
     # Verify assessment exists
     result = await db.execute(

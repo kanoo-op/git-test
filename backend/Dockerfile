@@ -14,8 +14,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application
 COPY . .
 
+# Create non-root user for security
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+RUN chown -R appuser:appgroup /app
+USER appuser
+
 # Expose port
 EXPOSE 8000
 
-# Run with uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run with uvicorn (with timeout and keepalive settings)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "30"]

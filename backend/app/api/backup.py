@@ -1,5 +1,6 @@
 import json
-from datetime import datetime
+import uuid as uuid_mod
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
@@ -38,7 +39,7 @@ async def create_backup(
 
     backup_data = {
         "version": "1.0",
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": user.username,
         "patients": [],
     }
@@ -101,7 +102,7 @@ async def create_backup(
         ip_address=get_client_ip(request),
     )
 
-    filename = f"postureview-backup-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.enc"
+    filename = f"postureview-backup-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.enc"
     return Response(
         content=encrypted_backup,
         media_type="application/octet-stream",
@@ -129,18 +130,42 @@ async def restore_backup(
     if "version" not in backup_data or "patients" not in backup_data:
         raise HTTPException(status_code=400, detail="Invalid backup format")
 
+    if not isinstance(backup_data["patients"], list):
+        raise HTTPException(status_code=400, detail="Invalid backup format: patients must be a list")
+
+    def _validate_uuid(value: str, field_name: str) -> str:
+        try:
+            return str(uuid_mod.UUID(value))
+        except (ValueError, AttributeError):
+            raise HTTPException(status_code=400, detail=f"Invalid UUID in backup data: {field_name}={value!r}")
+
+    VALID_SEVERITIES = {"normal", "mild", "moderate", "severe"}
+
     restored_count = 0
+    skipped_count = 0
 
     for p_data in backup_data["patients"]:
+        if not isinstance(p_data, dict) or "id" not in p_data or "name" not in p_data:
+            skipped_count += 1
+            continue
+
+        patient_id = _validate_uuid(p_data["id"], "patient.id")
+
         # Check if patient already exists
         existing = await db.execute(
-            select(Patient).where(Patient.id == p_data["id"])
+            select(Patient).where(Patient.id == patient_id)
         )
         if existing.scalar_one_or_none():
             continue  # Skip existing patients
 
+        # Validate created_by is a valid UUID; fallback to current user
+        try:
+            created_by = str(uuid_mod.UUID(p_data.get("created_by", "")))
+        except (ValueError, AttributeError):
+            created_by = str(user.id)
+
         patient = Patient(
-            id=p_data["id"],
+            id=patient_id,
             name=p_data["name"],
             dob=p_data.get("dob"),
             gender=p_data.get("gender"),
@@ -150,34 +175,52 @@ async def restore_backup(
             medical_history=p_data.get("medical_history"),
             occupation=p_data.get("occupation"),
             notes=p_data.get("notes"),
-            created_by=p_data.get("created_by", str(user.id)),
+            created_by=created_by,
         )
         db.add(patient)
 
         for a_data in p_data.get("assessments", []):
+            if not isinstance(a_data, dict) or "id" not in a_data:
+                continue
+
+            assessment_id = _validate_uuid(a_data["id"], "assessment.id")
+
+            try:
+                a_created_by = str(uuid_mod.UUID(a_data.get("created_by", "")))
+            except (ValueError, AttributeError):
+                a_created_by = str(user.id)
+
             assessment = Assessment(
-                id=a_data["id"],
-                patient_id=p_data["id"],
+                id=assessment_id,
+                patient_id=patient_id,
                 date=a_data.get("date"),
                 summary=a_data.get("summary"),
                 overall_notes=a_data.get("overall_notes"),  # already encrypted
                 highlight_state=a_data.get("highlight_state"),
                 posture_analysis=a_data.get("posture_analysis"),
-                created_by=a_data.get("created_by", str(user.id)),
+                created_by=a_created_by,
             )
             db.add(assessment)
 
             for s_data in a_data.get("selections", []):
+                if not isinstance(s_data, dict) or "id" not in s_data or "mesh_id" not in s_data:
+                    continue
+
+                selection_id = _validate_uuid(s_data["id"], "selection.id")
+                severity = s_data.get("severity", "normal")
+                if severity not in VALID_SEVERITIES:
+                    severity = "normal"
+
                 selection = Selection(
-                    id=s_data["id"],
-                    assessment_id=a_data["id"],
+                    id=selection_id,
+                    assessment_id=assessment_id,
                     mesh_id=s_data["mesh_id"],
                     tissue=s_data.get("tissue"),
                     region=s_data.get("region"),
                     region_key=s_data.get("region_key"),
                     side=s_data.get("side"),
-                    severity=s_data.get("severity", "normal"),
-                    concern=s_data.get("concern", False),
+                    severity=severity,
+                    concern=bool(s_data.get("concern", False)),
                     notes=s_data.get("notes"),
                 )
                 db.add(selection)
