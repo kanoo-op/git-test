@@ -21,6 +21,7 @@ import { initPoseDashboard, updateDashboardFromAnalysis, refreshDashboardCharts 
 import { initMultiView, setViewMode } from './core/MultiView.js';
 import { initExerciseRecPanel, hideExerciseRecommendations } from './ui/ExerciseRecommendation.js';
 import { initExerciseMode, stopExerciseMode } from './pose/ExerciseMode.js';
+import { initExerciseLibrary } from './ui/ExerciseLibrary.js';
 
 // Toast + Video Modal (self-registering on window)
 import './ui/Toast.js';
@@ -100,6 +101,7 @@ loadModel(
         initMultiView(canvas, scene, camera, bounds.center);
         initExerciseRecPanel();
         initExerciseMode();
+        initExerciseLibrary();
         initViewModeToggle();
         initRenderModeToggle();
         initMobileMenu();
