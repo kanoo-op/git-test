@@ -14,7 +14,7 @@ const ANATOMY_DB = {
             { name: '측두근 자가마사지', difficulty: '쉬움', videoId: 'm8QyW9RLEcQ' },
             { name: '턱 이완 운동', difficulty: '쉬움', videoId: 'pnlnBFsCLCE' }
         ],
-        cameraPreset: { position: 'left', yOffset: 0.4 }
+        cameraPreset: { position: 'right', yOffset: 0.4 }
     },
     head_r: {
         name: '머리 (우)',
@@ -27,7 +27,7 @@ const ANATOMY_DB = {
             { name: '측두근 자가마사지', difficulty: '쉬움', videoId: 'm8QyW9RLEcQ' },
             { name: '턱 이완 운동', difficulty: '쉬움', videoId: 'pnlnBFsCLCE' }
         ],
-        cameraPreset: { position: 'right', yOffset: 0.4 }
+        cameraPreset: { position: 'left', yOffset: 0.4 }
     },
     neck_l: {
         name: '목 (좌)',
@@ -41,7 +41,7 @@ const ANATOMY_DB = {
             { name: '딥넥 플렉서 강화', difficulty: '보통', videoId: 'eKUH0Rcwhd8' },
             { name: '경추 등척성 운동', difficulty: '보통', videoId: 'eKUH0Rcwhd8' }
         ],
-        cameraPreset: { position: 'left', yOffset: 0.35 }
+        cameraPreset: { position: 'right', yOffset: 0.35 }
     },
     neck_r: {
         name: '목 (우)',
@@ -55,7 +55,7 @@ const ANATOMY_DB = {
             { name: '딥넥 플렉서 강화', difficulty: '보통', videoId: 'eKUH0Rcwhd8' },
             { name: '경추 등척성 운동', difficulty: '보통', videoId: 'eKUH0Rcwhd8' }
         ],
-        cameraPreset: { position: 'right', yOffset: 0.35 }
+        cameraPreset: { position: 'left', yOffset: 0.35 }
     },
     shoulder_l: {
         name: '왼쪽 어깨',
@@ -69,7 +69,7 @@ const ANATOMY_DB = {
             { name: '견갑골 세팅', difficulty: '보통', videoId: 'XXgaV3vsmGQ' },
             { name: 'Y-T-W 운동', difficulty: '보통', videoId: 'BMKZ1cN7MkY' }
         ],
-        cameraPreset: { position: 'left', yOffset: 0.2 }
+        cameraPreset: { position: 'right', yOffset: 0.2 }
     },
     shoulder_r: {
         name: '오른쪽 어깨',
@@ -83,7 +83,7 @@ const ANATOMY_DB = {
             { name: '견갑골 세팅', difficulty: '보통', videoId: 'XXgaV3vsmGQ' },
             { name: 'Y-T-W 운동', difficulty: '보통', videoId: 'BMKZ1cN7MkY' }
         ],
-        cameraPreset: { position: 'right', yOffset: 0.2 }
+        cameraPreset: { position: 'left', yOffset: 0.2 }
     },
     chest_l: {
         name: '가슴 (좌)',
@@ -206,7 +206,7 @@ const ANATOMY_DB = {
             { name: '편심성 손목 운동', difficulty: '보통', videoId: '9VTCCQm6-1g' },
             { name: '그립 강화운동', difficulty: '쉬움', videoId: '2hsd6XwYoy4' }
         ],
-        cameraPreset: { position: 'left', yOffset: 0.05 }
+        cameraPreset: { position: 'right', yOffset: 0.05 }
     },
     arm_r: {
         name: '오른팔',
@@ -219,7 +219,7 @@ const ANATOMY_DB = {
             { name: '편심성 손목 운동', difficulty: '보통', videoId: '9VTCCQm6-1g' },
             { name: '그립 강화운동', difficulty: '쉬움', videoId: '2hsd6XwYoy4' }
         ],
-        cameraPreset: { position: 'right', yOffset: 0.05 }
+        cameraPreset: { position: 'left', yOffset: 0.05 }
     },
     hip_l: {
         name: '골반 (좌)',
@@ -233,7 +233,7 @@ const ANATOMY_DB = {
             { name: '이상근 스트레칭', difficulty: '쉬움', videoId: 'HNfHJfeosOc' },
             { name: '힙 힌지', difficulty: '보통', videoId: 'iQ7MnBxZpN8' }
         ],
-        cameraPreset: { position: 'left', yOffset: -0.1 }
+        cameraPreset: { position: 'right', yOffset: -0.1 }
     },
     hip_r: {
         name: '골반 (우)',
@@ -247,7 +247,7 @@ const ANATOMY_DB = {
             { name: '이상근 스트레칭', difficulty: '쉬움', videoId: 'HNfHJfeosOc' },
             { name: '힙 힌지', difficulty: '보통', videoId: 'iQ7MnBxZpN8' }
         ],
-        cameraPreset: { position: 'right', yOffset: -0.1 }
+        cameraPreset: { position: 'left', yOffset: -0.1 }
     },
     thigh_l: {
         name: '왼대퇴',

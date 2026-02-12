@@ -1,6 +1,6 @@
-// Sidebar.js - Sidebar navigation and tissue controls
+// Sidebar.js - Sidebar navigation and controls
 
-import { setTissueVisible, setTissueOpacity, clearAllHighlights } from '../anatomy/Highlights.js';
+import { setTissueVisible, setTissueOpacity } from '../anatomy/Highlights.js';
 import { setCameraPreset } from '../core/Controls.js';
 import { loadMapping, clearMapping, getMappingInfo, hasMappingLoaded } from '../anatomy/Regions.js';
 import { saveMapping, getMapping, clearMappingData } from '../services/Storage.js';
@@ -12,7 +12,6 @@ export function initSidebar(callbacks = {}) {
     // Navigation
     document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
         btn.addEventListener('click', () => {
-            // Update active state
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
@@ -21,6 +20,21 @@ export function initSidebar(callbacks = {}) {
         });
     });
 
+    // Export button
+    const exportBtn = document.getElementById('btn-export');
+    if (exportBtn && callbacks.onExport) {
+        exportBtn.addEventListener('click', callbacks.onExport);
+    }
+
+    // Auto-load mapping (no sidebar UI, just background load)
+    loadDefaultMapping();
+}
+
+/**
+ * Initialize floating controls inside the 3D viewer
+ * (tissue toggles + camera presets moved from sidebar)
+ */
+export function initFloatingControls() {
     // Tissue visibility toggles
     document.querySelectorAll('[data-tissue]').forEach(checkbox => {
         checkbox.addEventListener('change', () => {
@@ -42,15 +56,6 @@ export function initSidebar(callbacks = {}) {
             setCameraPreset(btn.dataset.viewPreset);
         });
     });
-
-    // Export button
-    const exportBtn = document.getElementById('btn-export');
-    if (exportBtn && callbacks.onExport) {
-        exportBtn.addEventListener('click', callbacks.onExport);
-    }
-
-    // --- Mapping ---
-    initMappingUI();
 }
 
 /**
@@ -86,63 +91,16 @@ function calculateAge(dob) {
     return age;
 }
 
-// ======== Mapping UI ========
-
-function initMappingUI() {
-    const fileInput = document.getElementById('input-mapping-file');
-    const loadBtn = document.getElementById('btn-load-mapping');
-    const clearBtn = document.getElementById('btn-clear-mapping');
-
-    // Load button triggers file input
-    loadBtn.addEventListener('click', () => fileInput.click());
-
-    // File selected
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            try {
-                const json = JSON.parse(evt.target.result);
-                if (!json.regions) {
-                    alert('잘못된 매핑 파일: "regions" 필드가 없습니다.');
-                    return;
-                }
-                const stats = loadMapping(json);
-                saveMapping(json);
-                renderMappingStatus();
-            } catch (err) {
-                alert('매핑 JSON 파싱 실패: ' + err.message);
-            }
-        };
-        reader.readAsText(file);
-        // Reset so the same file can be re-selected
-        fileInput.value = '';
-    });
-
-    // Clear button
-    clearBtn.addEventListener('click', () => {
-        clearMapping();
-        clearMappingData();
-        renderMappingStatus();
-    });
-
-    // Restore saved mapping on init, or load default
+/**
+ * Load default mapping from mapping_Final.json (auto-load, no UI)
+ */
+async function loadDefaultMapping() {
     const savedMapping = getMapping();
     if (savedMapping) {
         loadMapping(savedMapping);
-        renderMappingStatus();
-    } else {
-        // Load default mapping file
-        loadDefaultMapping();
+        return;
     }
-}
 
-/**
- * Load default mapping from mapping_Final.json
- */
-async function loadDefaultMapping() {
     try {
         const res = await fetch('./mapping_Final.json');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -154,54 +112,11 @@ async function loadDefaultMapping() {
     } catch (err) {
         console.warn('기본 매핑 로드 실패:', err);
     }
-    renderMappingStatus();
 }
 
 /**
- * Render the mapping status and region list in the sidebar
+ * renderMappingStatus - kept as no-op for backward compatibility
  */
 export function renderMappingStatus() {
-    const statusEl = document.getElementById('mapping-status');
-    const regionsEl = document.getElementById('mapping-regions');
-    const clearBtn = document.getElementById('btn-clear-mapping');
-    const info = getMappingInfo();
-
-    if (!info) {
-        statusEl.innerHTML = `
-            <div class="mapping-empty">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <span>매핑이 로드되지 않았습니다</span>
-            </div>
-        `;
-        regionsEl.innerHTML = '';
-        clearBtn.style.display = 'none';
-        return;
-    }
-
-    const date = info.timestamp
-        ? new Date(info.timestamp).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
-        : '-';
-
-    statusEl.innerHTML = `
-        <div class="mapping-loaded">
-            <div class="mapping-label">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                매핑 v${info.version}
-            </div>
-            <div class="mapping-meta">${info.regionCount}개 부위 | ${info.meshCount}개 메쉬 | ${date}</div>
-        </div>
-    `;
-
-    clearBtn.style.display = 'flex';
-
-    // Render region list
-    regionsEl.innerHTML = info.regions.map(r => `
-        <div class="mapping-region-item" data-region="${r.id}">
-            <div class="region-name">
-                <span class="region-dot"></span>
-                <span>${r.label}</span>
-            </div>
-            <span class="mesh-count">${r.meshCount}</span>
-        </div>
-    `).join('');
+    // Mapping status is now rendered in DevSettings
 }

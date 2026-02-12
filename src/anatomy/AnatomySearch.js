@@ -6,7 +6,7 @@ import { searchAnatomy, getAnatomyInfo } from './AnatomyData.js';
 import { getRegionMeshNames } from './Regions.js';
 import { getMeshByName } from '../core/ModelLoader.js';
 import { animateCameraTo } from '../core/Controls.js';
-import { highlightMesh, unhighlightMesh } from './Highlights.js';
+import { highlightMesh, unhighlightMesh, startPulseHighlight, stopPulseHighlight } from './Highlights.js';
 
 let searchInput = null;
 let resultsContainer = null;
@@ -184,7 +184,7 @@ function focusOnRegion(regionKey) {
     // 3D 뷰어로 전환
     if (switchViewFn) switchViewFn('viewer');
 
-    // 약간의 딜레이 후 카메라 이동 (뷰 전환 렌더링 대기)
+    // 뷰 전환 렌더링 대기 후 카메라 이동 + 펄스
     setTimeout(() => {
         const meshNames = getRegionMeshNames(regionKey);
         if (meshNames.length === 0) {
@@ -193,22 +193,24 @@ function focusOnRegion(regionKey) {
         }
 
         const box = new THREE.Box3();
-        let meshCount = 0;
+        const pulseMeshes = [];
 
         for (const name of meshNames) {
             const mesh = getMeshByName(name);
             if (mesh && mesh.visible) {
                 box.expandByObject(mesh);
-                highlightMesh(mesh, 'mild');
+                pulseMeshes.push(mesh);
                 highlightedMeshes.push(mesh);
-                meshCount++;
             }
         }
 
-        if (meshCount === 0) {
+        if (pulseMeshes.length === 0) {
             window.showToast?.(`"${info.name}" 부위의 메쉬가 보이지 않습니다.`, 'warning');
             return;
         }
+
+        // 붉은색 깜빡이는 펄스 효과 시작 (버텍스 레벨, 좌/우 필터링)
+        startPulseHighlight(pulseMeshes, regionKey);
 
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
@@ -242,11 +244,12 @@ function focusOnRegion(regionKey) {
             window._openAnatomyPanel(regionKey);
         }
 
-        setTimeout(() => clearSearchHighlights(), 5000);
+        // 펄스는 다른 부위 클릭 또는 뷰 전환 시 자동 해제
     }, 200);
 }
 
 function clearSearchHighlights() {
+    stopPulseHighlight();
     for (const mesh of highlightedMeshes) {
         unhighlightMesh(mesh);
     }

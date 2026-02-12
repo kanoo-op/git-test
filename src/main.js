@@ -6,8 +6,9 @@ import { initScene, startRenderLoop, captureScreenshot } from './core/SceneManag
 import { loadModel } from './core/ModelLoader.js';
 import { scene, camera } from './core/SceneManager.js';
 import { initControls } from './core/Controls.js';
-import { initSidebar } from './ui/Sidebar.js';
+import { initSidebar, initFloatingControls } from './ui/Sidebar.js';
 import { initPanels, switchView } from './ui/ViewRouter.js';
+import { initDevSettings } from './ui/DevSettings.js';
 import { openContextPanel, closeContextPanel } from './ui/ContextPanel.js';
 import { isMappingAssignMode } from './ui/ViewRouter.js';
 import { handleMappingAssign, handleMappingRemove } from './mapping/MappingEditor.js';
@@ -18,6 +19,7 @@ import { initAnatomySearch, showAnatomySearch } from './anatomy/AnatomySearch.js
 import { initRealtimePoseUI } from './pose/RealtimeUI.js';
 import { initPoseDashboard, updateDashboardFromAnalysis, refreshDashboardCharts } from './pose/PoseDashboard.js';
 import { initMultiView, setViewMode } from './core/MultiView.js';
+import { initExerciseRecPanel, hideExerciseRecommendations } from './ui/ExerciseRecommendation.js';
 
 // Toast + Video Modal (self-registering on window)
 import './ui/Toast.js';
@@ -85,6 +87,9 @@ loadModel(
         });
 
         initPanels();
+        initFloatingControls();
+        initDevSettings();
+        initPostureTabs();
         initPostureUI();
         initAnatomySearch({ switchView: switchView });
         initRealtimePoseUI();
@@ -92,6 +97,7 @@ loadModel(
         window._refreshDashboardCharts = refreshDashboardCharts;
         window._updateDashboardFromAnalysis = updateDashboardFromAnalysis;
         initMultiView(canvas, scene, camera, bounds.center);
+        initExerciseRecPanel();
         initViewModeToggle();
         initRenderModeToggle();
         initMobileMenu();
@@ -173,6 +179,31 @@ function handleMeshHover(mesh, info) {
     }
 }
 
+// ===== Posture Tabs =====
+
+function initPostureTabs() {
+    document.querySelectorAll('.posture-tab[data-posture-tab]').forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Update active tab button
+            document.querySelectorAll('.posture-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Show corresponding content
+            const target = tab.dataset.postureTab;
+            document.querySelectorAll('.posture-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            const targetContent = document.getElementById(`posture-tab-${target}`);
+            if (targetContent) targetContent.classList.add('active');
+
+            // Refresh charts when switching to dashboard tab
+            if (target === 'dashboard' && window._refreshDashboardCharts) {
+                window._refreshDashboardCharts();
+            }
+        });
+    });
+}
+
 // ===== 3D Screenshot =====
 
 function handleScreenshot() {
@@ -244,6 +275,11 @@ function initKeyboardShortcuts() {
         }
 
         if (e.key === 'Escape') {
+            const devSettings = document.getElementById('dev-settings-overlay');
+            if (devSettings && devSettings.style.display !== 'none') {
+                devSettings.style.display = 'none';
+                return;
+            }
             const videoModal = document.getElementById('video-modal-overlay');
             if (videoModal && videoModal.style.display !== 'none') {
                 window.closeExerciseVideo();
@@ -257,6 +293,11 @@ function initKeyboardShortcuts() {
             const photoModal = document.getElementById('photo-modal-overlay');
             if (photoModal && photoModal.style.display !== 'none') {
                 photoModal.style.display = 'none';
+                return;
+            }
+            const recPanel = document.getElementById('exercise-rec-panel');
+            if (recPanel && recPanel.style.display !== 'none') {
+                hideExerciseRecommendations();
                 return;
             }
             const contextPanel = document.getElementById('context-panel');

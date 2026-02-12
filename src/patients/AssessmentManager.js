@@ -18,6 +18,8 @@ import {
     getLoadedAssessmentId, setLoadedAssessmentId,
 } from '../ui/ViewRouter.js';
 import { closeContextPanel } from '../ui/ContextPanel.js';
+import { getAnatomyInfo } from '../anatomy/AnatomyData.js';
+import { initVoiceInput, resetVoiceInput, preserveExistingText, applyAutoSuggestions, getTagsSummary } from '../ui/VoiceInput.js';
 
 // ======== Region coloring ========
 
@@ -187,11 +189,35 @@ export function showEndAssessmentModal() {
     }
 
     fillObjectiveAutoFindings();
+
+    // 음성 입력 초기화
+    resetVoiceInput();
+    initVoiceInput({
+        targetId: 'soap-symptom-desc',
+        tagsContainerId: 'voice-tags',
+        micBtnId: 'voice-mic-btn',
+        statusId: 'voice-status',
+        onTags: (tags) => {
+            const autoBtn = document.getElementById('voice-autofill-btn');
+            if (autoBtn) autoBtn.style.display = tags.size > 0 ? 'inline-flex' : 'none';
+        }
+    });
+
+    // 자동채우기 버튼
+    const autoFillBtn = document.getElementById('voice-autofill-btn');
+    if (autoFillBtn) {
+        autoFillBtn.onclick = () => {
+            applyAutoSuggestions();
+            window.showToast?.('감지된 키워드가 빈 필드에 자동 적용되었습니다.', 'success', 2000);
+        };
+    }
+
     document.getElementById('soap-chief-complaint').focus();
 }
 
 export function hideEndAssessmentModal() {
     document.getElementById('end-assessment-overlay').style.display = 'none';
+    resetVoiceInput();
 }
 
 export function confirmEndAssessment() {
@@ -324,6 +350,16 @@ function loadSoapData(soap) {
     document.getElementById('soap-referral').value = p.referral || '';
 }
 
+function serializeVoiceTags() {
+    const tags = getTagsSummary();
+    if (tags.size === 0) return null;
+    const obj = {};
+    for (const [cat, keywords] of tags) {
+        obj[cat] = keywords;
+    }
+    return obj;
+}
+
 function collectSoapData() {
     return {
         subjective: {
@@ -334,6 +370,7 @@ function collectSoapData() {
             onset: document.getElementById('soap-onset').value.trim(),
             aggravating: document.getElementById('soap-aggravating').value.trim(),
             relieving: document.getElementById('soap-relieving').value.trim(),
+            voiceTags: serializeVoiceTags(),
         },
         objective: {
             autoFindings: document.getElementById('soap-auto-findings').value.trim(),
@@ -368,27 +405,62 @@ function fillObjectiveAutoFindings() {
     const lines = [];
 
     const selections = currentAssessment.selections || [];
-    const sevGroups = {};
+
+    // regionKey 기반으로 중증도 그룹핑 (중복 제거, 최고 중증도 유지)
+    const SEV_ORDER = { severe: 3, moderate: 2, mild: 1, normal: 0 };
+    const regionSevMap = new Map();
     for (const s of selections) {
         if (!s.severity || s.severity === 'normal') continue;
-        const label = s.region || s.meshId;
-        if (!sevGroups[s.severity]) sevGroups[s.severity] = [];
-        if (!sevGroups[s.severity].includes(label)) {
-            sevGroups[s.severity].push(label);
+        const key = s.regionKey || s.region || s.meshId;
+        const existing = regionSevMap.get(key);
+        if (!existing || (SEV_ORDER[s.severity] || 0) > (SEV_ORDER[existing] || 0)) {
+            regionSevMap.set(key, s.severity);
         }
     }
-    for (const [sev, regions] of Object.entries(sevGroups)) {
-        lines.push(`[${SEV_LABELS[sev] || sev}] ${regions.join(', ')}`);
+
+    // 중증도별 그룹 (해부학 이름 사용)
+    const sevGroups = {};
+    for (const [key, sev] of regionSevMap) {
+        const info = getAnatomyInfo(key);
+        const label = info ? info.name : (regionKeyToLabel(key) || key);
+        if (!sevGroups[sev]) sevGroups[sev] = [];
+        sevGroups[sev].push(label);
     }
 
+    // 중증 → 경도 순으로 출력
+    const sevOrder = ['severe', 'moderate', 'mild'];
+    for (const sev of sevOrder) {
+        if (sevGroups[sev]) {
+            lines.push(`[${SEV_LABELS[sev]}] ${sevGroups[sev].join(', ')}`);
+        }
+    }
+
+    // 자세분석 지표
     const pa = currentAssessment.postureAnalysis;
     if (pa && pa.metrics) {
-        lines.push('--- 자세분석 ---');
+        lines.push('');
+        lines.push('── 자세분석 지표 ──');
         const m = pa.metrics;
         if (m.forwardHead) lines.push(`전방두부: ${m.forwardHead.value}° (${SEV_LABELS[m.forwardHead.severity] || m.forwardHead.severity})`);
-        if (m.shoulderDiff) lines.push(`어깨 높이차: ${m.shoulderDiff.value}cm`);
-        if (m.pelvicTilt) lines.push(`골반 기울기: ${m.pelvicTilt.value}°`);
-        if (m.trunkTilt) lines.push(`체간 측방: ${m.trunkTilt.value}°`);
+        if (m.shoulderDiff) lines.push(`어깨 높이차: ${m.shoulderDiff.value}cm (${SEV_LABELS[m.shoulderDiff.severity] || ''})`);
+        if (m.pelvicTilt) lines.push(`골반 기울기: ${m.pelvicTilt.value}° (${SEV_LABELS[m.pelvicTilt.severity] || ''})`);
+        if (m.trunkTilt) lines.push(`체간 측방: ${m.trunkTilt.value}° (${SEV_LABELS[m.trunkTilt.severity] || ''})`);
+        if (m.kneeLeft && m.kneeLeft.severity !== 'normal') lines.push(`좌측 무릎: ${m.kneeLeft.type} (${SEV_LABELS[m.kneeLeft.severity]})`);
+        if (m.kneeRight && m.kneeRight.severity !== 'normal') lines.push(`우측 무릎: ${m.kneeRight.type} (${SEV_LABELS[m.kneeRight.severity]})`);
+        if (m.kyphosis && m.kyphosis.severity !== 'normal') lines.push(`상부 후만: ${SEV_LABELS[m.kyphosis.severity]}`);
+    }
+
+    // 주요 관련 근육 요약
+    const affectedMuscles = new Set();
+    for (const [key] of regionSevMap) {
+        const info = getAnatomyInfo(key);
+        if (info && info.keyMuscles) {
+            info.keyMuscles.slice(0, 2).forEach(m => affectedMuscles.add(m));
+        }
+    }
+    if (affectedMuscles.size > 0) {
+        lines.push('');
+        lines.push(`관련 근육: ${[...affectedMuscles].join(', ')}`);
     }
 
     document.getElementById('soap-auto-findings').value = lines.join('\n');

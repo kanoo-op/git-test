@@ -5,6 +5,7 @@ import { analyzePosture, initPoseLandmarker } from './PoseDetector.js';
 import { drawLandmarks } from './PoseOverlay.js';
 import { applyRegionSeverity } from '../patients/AssessmentManager.js';
 import { switchView, ensureAssessmentMode } from '../ui/ViewRouter.js';
+import { showExerciseRecommendations } from '../ui/ExerciseRecommendation.js';
 import * as storage from '../services/Storage.js';
 
 let webcamStream = null;
@@ -468,6 +469,9 @@ function applyToAssessment() {
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
     document.querySelector('.nav-item[data-view="viewer"]').classList.add('active');
     switchView('viewer');
+
+    // 4) 추천 운동 패널 표시 (중증도 기반)
+    setTimeout(() => showExerciseRecommendations(regionMap), 300);
 
     window.showToast(`${patient.name} 환자에게 ${applied}개 부위 자세분석 결과가 적용되었습니다.`, 'success', 4000);
 }

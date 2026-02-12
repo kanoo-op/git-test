@@ -4,6 +4,7 @@ import Chart from 'chart.js/auto';
 import * as storage from '../services/Storage.js';
 import { resetRegionColors } from '../anatomy/Highlights.js';
 import { getMeshRegionKey, regionKeyToLabel } from '../anatomy/Regions.js';
+import { getAnatomyInfo } from '../anatomy/AnatomyData.js';
 import { updatePatientCard } from '../ui/Sidebar.js';
 import { SEV_LABELS, SEV_COLORS, GENDER_LABELS, calculateAge, escapeHtml } from '../utils/helpers.js';
 import {
@@ -153,6 +154,92 @@ function showPhotoModal(src) {
     overlay.style.display = 'flex';
 }
 
+/**
+ * 평가의 selections에서 중증 부위에 따른 추천 운동 HTML 생성
+ */
+function renderAssessmentExercises(assessment) {
+    const selections = assessment.selections || [];
+    if (selections.length === 0) return '';
+
+    const DIFF_CLASS = { '쉬움': 'easy', '보통': 'medium', '어려움': 'hard' };
+    const SEV_ORDER = { severe: 0, moderate: 1, mild: 2, normal: 3 };
+
+    // regionKey별 최고 중증도 수집
+    const regionSevMap = new Map();
+    for (const s of selections) {
+        const key = s.regionKey;
+        if (!key || s.severity === 'normal') continue;
+        const existing = regionSevMap.get(key);
+        if (!existing || (SEV_ORDER[s.severity] ?? 3) < (SEV_ORDER[existing] ?? 3)) {
+            regionSevMap.set(key, s.severity);
+        }
+    }
+
+    if (regionSevMap.size === 0) return '';
+
+    // 중증도 높은 순 정렬
+    const sorted = [...regionSevMap.entries()]
+        .sort((a, b) => (SEV_ORDER[a[1]] ?? 3) - (SEV_ORDER[b[1]] ?? 3));
+
+    const seenExercises = new Set();
+    const sections = [];
+
+    for (const [regionKey, severity] of sorted) {
+        const info = getAnatomyInfo(regionKey);
+        if (!info || !info.exercises || info.exercises.length === 0) continue;
+
+        const exercises = info.exercises.filter(e => {
+            const k = e.name + '|' + (e.videoId || '');
+            if (seenExercises.has(k)) return false;
+            seenExercises.add(k);
+            return true;
+        });
+
+        if (exercises.length === 0) continue;
+
+        sections.push({ regionKey, name: info.name, severity, exercises });
+    }
+
+    if (sections.length === 0) return '';
+
+    const totalEx = sections.reduce((s, sec) => s + sec.exercises.length, 0);
+
+    const sectionsHtml = sections.map(sec => {
+        const exHtml = sec.exercises.map(e => `
+            <div class="pd-rec-exercise" data-exercise="${escapeHtml(e.name)}" data-video-id="${e.videoId || ''}" data-difficulty="${escapeHtml(e.difficulty)}">
+                <span class="pd-rec-ex-name">${escapeHtml(e.name)}</span>
+                <span class="pd-rec-ex-right">
+                    <span class="exercise-difficulty difficulty-${DIFF_CLASS[e.difficulty] || 'medium'}">${escapeHtml(e.difficulty)}</span>
+                    <span class="pd-rec-play"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>
+                </span>
+            </div>
+        `).join('');
+
+        return `
+            <div class="pd-rec-region">
+                <div class="pd-rec-region-header">
+                    <span class="pd-rec-dot sev-${sec.severity}"></span>
+                    <span class="pd-rec-region-name">${escapeHtml(sec.name)}</span>
+                    <span class="pd-rec-sev sev-text-${sec.severity}">${SEV_LABELS[sec.severity]}</span>
+                </div>
+                <div class="pd-rec-exercises">${exHtml}</div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="pd-rec-section">
+            <div class="pd-rec-header" data-toggle-rec>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>추천 운동</span>
+                <span class="pd-rec-badge">${totalEx}</span>
+                <svg class="pd-rec-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="pd-rec-body">${sectionsHtml}</div>
+        </div>
+    `;
+}
+
 function renderAssessmentTimeline(patient) {
     const timeline = document.getElementById('pd-assessments-timeline');
     const assessments = patient.assessments || [];
@@ -207,6 +294,8 @@ function renderAssessmentTimeline(patient) {
             `;
         }
 
+        const exerciseRecHtml = renderAssessmentExercises(a);
+
         return `
             <div class="pd-timeline-item ${isLoaded ? 'active' : ''}" data-id="${a.id}">
                 <div class="pd-timeline-dot"></div>
@@ -227,6 +316,7 @@ function renderAssessmentTimeline(patient) {
                         `<span class="severity-tag ${sev}">${SEV_LABELS[sev] || sev}: ${count}</span>`
                     ).join('')}
                 </div>
+                ${exerciseRecHtml}
                 ${renderSoapTimelineSummary(a)}
                 <div class="pd-timeline-actions">
                     <button class="view-assessment" data-id="${a.id}">3D에서 보기</button>
@@ -285,6 +375,25 @@ function renderAssessmentTimeline(patient) {
             }
             const compareBtn = document.getElementById('btn-compare-assessments');
             compareBtn.style.display = compareSelections.size === 2 ? 'inline-flex' : 'none';
+        });
+    });
+
+    // Exercise recommendation: toggle & video click
+    timeline.querySelectorAll('[data-toggle-rec]').forEach(header => {
+        header.addEventListener('click', () => {
+            const section = header.closest('.pd-rec-section');
+            if (section) section.classList.toggle('collapsed');
+        });
+    });
+
+    timeline.querySelectorAll('.pd-rec-exercise').forEach(item => {
+        item.addEventListener('click', () => {
+            const name = item.dataset.exercise;
+            const videoId = item.dataset.videoId;
+            const difficulty = item.dataset.difficulty;
+            if (window.openExerciseVideo) {
+                window.openExerciseVideo(name, videoId, difficulty);
+            }
         });
     });
 }

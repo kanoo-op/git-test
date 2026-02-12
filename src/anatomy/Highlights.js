@@ -470,6 +470,83 @@ function getXrayMaterial(uuid) {
 /**
  * Switch render mode: 'muscle' (default), 'skeleton' (bones only), 'xray' (Fresnel edges)
  */
+// ═══ Pulse Animation System (질환 검색 → 3D 깜빡임, 버텍스 레벨) ═══
+
+const pulsingMeshes = new Map(); // uuid → { mesh, origColors, hitIndices, colAttr }
+let pulseAnimId = null;
+const PULSE_COLOR = { r: 1.0, g: 0.09, b: 0.27 }; // #FF1744
+
+/**
+ * 버텍스 레벨 펄스: 해당 측 버텍스만 빨간색으로 깜빡임
+ * @param {THREE.Mesh[]} meshes - 대상 메쉬 배열
+ * @param {string} regionKey - 부위 키 (e.g. 'shoulder_l') → 좌/우 필터링용
+ */
+export function startPulseHighlight(meshes, regionKey) {
+    stopPulseHighlight();
+
+    const side = regionKey?.endsWith('_l') ? 'l' : regionKey?.endsWith('_r') ? 'r' : null;
+    const vec3 = new THREE.Vector3();
+
+    for (const mesh of meshes) {
+        if (!mesh || !mesh.isMesh) continue;
+        const pos = mesh.geometry.attributes.position;
+        const colAttr = mesh.geometry.attributes.color;
+        if (!pos || !colAttr) continue;
+
+        const origColors = new Float32Array(colAttr.array);
+
+        mesh.updateWorldMatrix(true, false);
+        const matW = mesh.matrixWorld;
+        const hitIndices = [];
+
+        for (let i = 0; i < pos.count; i++) {
+            vec3.set(pos.getX(i), pos.getY(i), pos.getZ(i)).applyMatrix4(matW);
+            if (side === 'l' && vec3.x < 0) continue;
+            if (side === 'r' && vec3.x >= 0) continue;
+            hitIndices.push(i);
+        }
+
+        if (hitIndices.length === 0) continue;
+
+        pulsingMeshes.set(mesh.uuid, { mesh, origColors, hitIndices, colAttr });
+    }
+
+    if (pulsingMeshes.size > 0) animatePulse();
+}
+
+function animatePulse() {
+    const t = Date.now() * 0.005;
+    const factor = 0.3 + (Math.sin(t) * 0.5 + 0.5) * 0.7; // 0.3 ~ 1.0
+
+    for (const { colAttr, hitIndices, origColors } of pulsingMeshes.values()) {
+        for (const i of hitIndices) {
+            const oi = i * 3;
+            // 원래 색상에서 빨간색으로 보간
+            colAttr.array[oi]     = origColors[oi]     + (PULSE_COLOR.r - origColors[oi])     * factor;
+            colAttr.array[oi + 1] = origColors[oi + 1] + (PULSE_COLOR.g - origColors[oi + 1]) * factor;
+            colAttr.array[oi + 2] = origColors[oi + 2] + (PULSE_COLOR.b - origColors[oi + 2]) * factor;
+        }
+        colAttr.needsUpdate = true;
+    }
+
+    pulseAnimId = requestAnimationFrame(animatePulse);
+}
+
+/**
+ * 펄스 효과 중지 + 원래 버텍스 색상 복원
+ */
+export function stopPulseHighlight() {
+    if (pulseAnimId) {
+        cancelAnimationFrame(pulseAnimId);
+        pulseAnimId = null;
+    }
+    for (const { colAttr, origColors } of pulsingMeshes.values()) {
+        colAttr.array.set(origColors);
+        colAttr.needsUpdate = true;
+    }
+    pulsingMeshes.clear();
+}
+
 export function setRenderMode(mode) {
     if (!sceneRoot) return;
     if (mode === currentRenderMode) return;

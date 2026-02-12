@@ -1,7 +1,7 @@
 // ViewRouter.js - Shared state + view routing + panel initialization
 
 import * as storage from '../services/Storage.js';
-import { resetRegionColors } from '../anatomy/Highlights.js';
+import { resetRegionColors, stopPulseHighlight } from '../anatomy/Highlights.js';
 import { updatePatientCard, renderMappingStatus } from './Sidebar.js';
 import { renderDashboard, setOpenPatientDetail } from './Dashboard.js';
 import { closeContextPanel } from './ContextPanel.js';
@@ -12,6 +12,7 @@ import {
     saveSelectionNote, onSeverityChange, toggleRegionPanel, setAllRegionsDefaultSeverity,
 } from '../patients/AssessmentManager.js';
 import { renderMappingEditor, showNewRegionForm, hideNewRegionForm, saveNewRegion, startAssignMode, stopAssignMode, deleteSelectedRegion, exportMapping, initMappingImportButtons } from '../mapping/MappingEditor.js';
+import { hideExerciseRecommendations } from './ExerciseRecommendation.js';
 
 // ======== Shared State ========
 
@@ -106,6 +107,15 @@ export function switchView(view) {
     currentView = view;
 
     if (view !== 'mapping' && assignMode) stopAssignMode();
+    if (view !== 'viewer') {
+        stopPulseHighlight();
+        hideExerciseRecommendations();
+    }
+
+    // Update sidebar nav active state
+    document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === view);
+    });
 
     // Hide all views
     document.getElementById('viewer-container').style.display = 'none';
@@ -115,7 +125,9 @@ export function switchView(view) {
     document.getElementById('mapping-editor').style.display = 'none';
     document.getElementById('posture-analysis-view').style.display = 'none';
     document.getElementById('disease-search-view').style.display = 'none';
-    document.getElementById('pose-dashboard-view').style.display = 'none';
+    document.getElementById('soap-records-view').style.display = 'none';
+    document.getElementById('exercise-view').style.display = 'none';
+    document.getElementById('reports-view').style.display = 'none';
 
     mappingEditorActive = false;
 
@@ -138,13 +150,19 @@ export function switchView(view) {
         case 'posture':
             document.getElementById('posture-analysis-view').style.display = 'block';
             updatePosturePatientBar();
+            if (window._refreshDashboardCharts) window._refreshDashboardCharts();
             break;
         case 'disease-search':
             document.getElementById('disease-search-view').style.display = 'block';
             break;
-        case 'pose-dashboard':
-            document.getElementById('pose-dashboard-view').style.display = 'block';
-            if (window._refreshDashboardCharts) window._refreshDashboardCharts();
+        case 'soap-records':
+            document.getElementById('soap-records-view').style.display = 'block';
+            break;
+        case 'exercise':
+            document.getElementById('exercise-view').style.display = 'block';
+            break;
+        case 'reports':
+            document.getElementById('reports-view').style.display = 'block';
             break;
         case 'mapping':
             document.getElementById('viewer-container').style.display = 'block';
