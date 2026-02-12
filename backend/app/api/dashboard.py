@@ -11,6 +11,7 @@ from ..models.patient import Patient
 from ..models.assessment import Assessment, Selection
 from ..models.user import User
 from ..schemas.dashboard import DashboardStats
+from ..services.encryption_service import decrypt
 from .deps import get_current_user
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -78,7 +79,7 @@ async def get_stats(
         recent_patients.append({
             "id": str(p.id),
             "name": p.name,
-            "diagnosis": p.diagnosis,
+            "diagnosis": decrypt(p.diagnosis),
             "assessmentCount": len(p.assessments),
         })
 

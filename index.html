@@ -59,6 +59,24 @@
         </div>
     </div>
 
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="login-overlay" style="display:none;">
+        <div class="login-card">
+            <h2>PostureView</h2>
+            <p>로그인하여 시작하세요</p>
+            <div class="login-error" id="login-error" style="display:none;"></div>
+            <div class="form-group">
+                <label for="login-username">사용자명</label>
+                <input type="text" id="login-username" placeholder="사용자명" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="login-password">비밀번호</label>
+                <input type="password" id="login-password" placeholder="비밀번호" autocomplete="current-password">
+            </div>
+            <button id="btn-login-submit" class="btn-primary" style="width:100%;margin-top:8px;">로그인</button>
+        </div>
+    </div>
+
     <!-- App Container -->
     <div id="app" class="app" style="display:none;">
         <!-- Mobile Hamburger -->
@@ -122,6 +140,19 @@
                     <div class="patient-name" id="patient-name">-</div>
                     <div class="patient-meta" id="patient-meta">-</div>
                 </div>
+            </div>
+
+            <!-- User Info Section -->
+            <div id="user-info-section" class="user-info-section" style="display:none;">
+                <div class="section-label">사용자</div>
+                <div class="user-info-display">
+                    <span id="user-display-name" class="user-display-name">-</span>
+                    <span id="user-display-role" class="user-display-role">-</span>
+                </div>
+                <button id="btn-logout" class="footer-btn btn-logout" title="로그아웃">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    로그아웃
+                </button>
             </div>
 
             <div class="sidebar-footer">
@@ -1134,6 +1165,15 @@
                 </div>
             </div>
             <div class="exercise-mode-body">
+                <!-- Reference Video Panel -->
+                <div class="exercise-mode-reference" id="exercise-mode-reference">
+                    <div class="em-reference-header">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <span>참고 영상</span>
+                    </div>
+                    <div class="em-reference-player" id="em-reference-player"></div>
+                </div>
+                <!-- Camera + Score -->
                 <div class="exercise-mode-camera-area">
                     <video id="exercise-mode-video" autoplay playsinline muted></video>
                     <canvas id="exercise-mode-canvas"></canvas>

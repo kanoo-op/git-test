@@ -14,6 +14,7 @@ import {
 import { renderMappingEditor, showNewRegionForm, hideNewRegionForm, saveNewRegion, startAssignMode, stopAssignMode, deleteSelectedRegion, exportMapping, initMappingImportButtons } from '../mapping/MappingEditor.js';
 import { hideExerciseRecommendations } from './ExerciseRecommendation.js';
 import { refreshReportPanel } from './ReportPanel.js';
+import { stopRealtimePose, isRealtimeRunning } from '../pose/RealtimePose.js';
 
 // ======== Shared State ========
 
@@ -111,6 +112,7 @@ export function switchView(view) {
     if (view !== 'viewer') {
         stopPulseHighlight();
         hideExerciseRecommendations();
+        if (isRealtimeRunning()) stopRealtimePose();
     }
 
     // Update sidebar nav active state
@@ -240,6 +242,12 @@ export function initPanels() {
     document.getElementById('btn-delete-region').addEventListener('click', deleteSelectedRegion);
     document.getElementById('btn-export-mapping').addEventListener('click', exportMapping);
     initMappingImportButtons();
+
+    // Posture patient select button -> switch to patients view
+    const postureSelectBtn = document.getElementById('posture-select-patient-btn');
+    if (postureSelectBtn) {
+        postureSelectBtn.addEventListener('click', () => switchView('patients'));
+    }
 
     // Load current patient
     const patient = storage.getCurrentPatient();

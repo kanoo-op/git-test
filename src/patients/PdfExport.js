@@ -14,6 +14,7 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
         const pageW = doc.internal.pageSize.getWidth();
 
         // Load Korean font
+        let koreanFontLoaded = false;
         try {
             const fontRes = await fetch('/fonts/NotoSansKR-Regular.ttf');
             if (fontRes.ok) {
@@ -22,8 +23,12 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
                 doc.addFileToVFS('NotoSansKR-Regular.ttf', base64);
                 doc.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
                 doc.setFont('NotoSansKR');
+                koreanFontLoaded = true;
             }
         } catch (_) { /* Fallback to default font */ }
+        if (!koreanFontLoaded) {
+            window.showToast?.('한국어 폰트를 로드하지 못했습니다. PDF에서 한글이 깨질 수 있습니다.', 'warning');
+        }
 
         let y = 16;
 
@@ -191,6 +196,7 @@ export async function exportProgressPDF(patientId) {
         const doc = new jsPDF('p', 'mm', 'a4');
         const pageW = doc.internal.pageSize.getWidth();
 
+        let koreanFontLoaded = false;
         try {
             const fontRes = await fetch('/fonts/NotoSansKR-Regular.ttf');
             if (fontRes.ok) {
@@ -199,8 +205,12 @@ export async function exportProgressPDF(patientId) {
                 doc.addFileToVFS('NotoSansKR-Regular.ttf', base64);
                 doc.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
                 doc.setFont('NotoSansKR');
+                koreanFontLoaded = true;
             }
         } catch (_) {}
+        if (!koreanFontLoaded) {
+            window.showToast?.('한국어 폰트를 로드하지 못했습니다. PDF에서 한글이 깨질 수 있습니다.', 'warning');
+        }
 
         let y = 16;
 
@@ -340,6 +350,7 @@ export async function exportReferralPDF(patientId, referralData) {
         const doc = new jsPDF('p', 'mm', 'a4');
         const pageW = doc.internal.pageSize.getWidth();
 
+        let koreanFontLoaded = false;
         try {
             const fontRes = await fetch('/fonts/NotoSansKR-Regular.ttf');
             if (fontRes.ok) {
@@ -348,8 +359,12 @@ export async function exportReferralPDF(patientId, referralData) {
                 doc.addFileToVFS('NotoSansKR-Regular.ttf', base64);
                 doc.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
                 doc.setFont('NotoSansKR');
+                koreanFontLoaded = true;
             }
         } catch (_) {}
+        if (!koreanFontLoaded) {
+            window.showToast?.('한국어 폰트를 로드하지 못했습니다. PDF에서 한글이 깨질 수 있습니다.', 'warning');
+        }
 
         let y = 16;
 

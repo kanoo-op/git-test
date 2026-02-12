@@ -23,6 +23,7 @@ import { initExerciseRecPanel, hideExerciseRecommendations } from './ui/Exercise
 import { initExerciseMode, stopExerciseMode } from './pose/ExerciseMode.js';
 import { initExerciseLibrary } from './ui/ExerciseLibrary.js';
 import { initReportPanel } from './ui/ReportPanel.js';
+import { handleLogout } from './services/Auth.js';
 
 // Toast + Video Modal (self-registering on window)
 import './ui/Toast.js';
@@ -92,6 +93,12 @@ loadModel(
         initPanels();
         initFloatingControls();
         initDevSettings();
+
+        // Logout button
+        const logoutBtn = document.getElementById('btn-logout');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', handleLogout);
+        }
         initPostureTabs();
         initPostureUI();
         initAnatomySearch({ switchView: switchView });
@@ -299,11 +306,6 @@ function initKeyboardShortcuts() {
             const endModal = document.getElementById('end-assessment-overlay');
             if (endModal && endModal.style.display !== 'none') {
                 endModal.style.display = 'none';
-                return;
-            }
-            const photoModal = document.getElementById('photo-modal-overlay');
-            if (photoModal && photoModal.style.display !== 'none') {
-                photoModal.style.display = 'none';
                 return;
             }
             const recPanel = document.getElementById('exercise-rec-panel');

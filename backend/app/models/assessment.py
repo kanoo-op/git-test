@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Text, DateTime, ForeignKey, func
+from sqlalchemy import String, Text, DateTime, ForeignKey, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,13 +13,13 @@ class Assessment(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     patient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True)
-    date: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    date: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     overall_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     highlight_state: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     posture_analysis: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     soap_notes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -45,8 +45,7 @@ class Selection(Base):
     assessment: Mapped["Assessment"] = relationship(back_populates="selections")
 
     __table_args__ = (
-        # UniqueConstraint on (assessment_id, mesh_id) for upsert
-        {"sqlite_autoincrement": True},
+        UniqueConstraint('assessment_id', 'mesh_id', name='uq_selection_assessment_mesh'),
     )
 
 
