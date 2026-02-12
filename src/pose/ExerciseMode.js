@@ -44,6 +44,44 @@ const EXERCISE_PRESETS = {
             knee_l: [165, 180], knee_r: [165, 180],
         },
     },
+    shoulder: {
+        label: '어깨 운동',
+        joints: {
+            shoulder_l: [20, 180], shoulder_r: [20, 180],
+            elbow_l: [140, 180], elbow_r: [140, 180],
+            neck_flexion: [145, 180],
+        },
+    },
+    shoulder_stretch: {
+        label: '어깨 스트레칭',
+        joints: {
+            shoulder_l: [30, 180], shoulder_r: [30, 180],
+            elbow_l: [60, 180], elbow_r: [60, 180],
+            neck_flexion: [130, 180],
+        },
+    },
+    neck: {
+        label: '목 운동',
+        joints: {
+            neck_flexion: [110, 180],
+            shoulder_l: [150, 180], shoulder_r: [150, 180],
+        },
+    },
+    arm: {
+        label: '팔 운동',
+        joints: {
+            shoulder_l: [20, 180], shoulder_r: [20, 180],
+            elbow_l: [30, 180], elbow_r: [30, 180],
+        },
+    },
+    back: {
+        label: '등/허리 운동',
+        joints: {
+            neck_flexion: [120, 180],
+            shoulder_l: [140, 180], shoulder_r: [140, 180],
+            hip_l: [90, 180], hip_r: [90, 180],
+        },
+    },
     squat: {
         label: '스쿼트',
         joints: {
@@ -75,12 +113,35 @@ const EXERCISE_PRESETS = {
             knee_l: [135, 175], knee_r: [135, 175],
         },
     },
+    hip: {
+        label: '고관절 운동',
+        joints: {
+            hip_l: [40, 180], hip_r: [40, 180],
+            knee_l: [120, 180], knee_r: [120, 180],
+        },
+    },
+    knee: {
+        label: '무릎 운동',
+        joints: {
+            hip_l: [130, 180], hip_r: [130, 180],
+            knee_l: [30, 180], knee_r: [30, 180],
+            ankle_l: [50, 110], ankle_r: [50, 110],
+        },
+    },
+    ankle: {
+        label: '발목 운동',
+        joints: {
+            knee_l: [155, 180], knee_r: [155, 180],
+            ankle_l: [30, 140], ankle_r: [30, 140],
+        },
+    },
     stretch: {
         label: '스트레칭',
         joints: {
             neck_flexion: [120, 180],
-            hip_l: [140, 180], hip_r: [140, 180],
-            knee_l: [155, 180], knee_r: [155, 180],
+            shoulder_l: [30, 180], shoulder_r: [30, 180],
+            hip_l: [90, 180], hip_r: [90, 180],
+            knee_l: [120, 180], knee_r: [120, 180],
         },
     },
 };
@@ -114,11 +175,27 @@ export function initExerciseMode() {
 
 function getPresetKey(exerciseName) {
     const name = (exerciseName || '').toLowerCase();
+
+    // 특정 운동 키워드 (우선 매칭)
     if (name.includes('스쿼트') || name.includes('squat')) return 'squat';
     if (name.includes('런지') || name.includes('lunge')) return 'lunge';
     if (name.includes('플랭크') || name.includes('plank')) return 'plank';
     if (name.includes('데드리프트') || name.includes('deadlift')) return 'deadlift';
-    if (name.includes('스트레칭') || name.includes('이완') || name.includes('마사지')) return 'stretch';
+
+    // 부위별 매칭
+    if (name.includes('어깨') || name.includes('견갑') || name.includes('삼각근') || name.includes('shoulder')) {
+        return (name.includes('스트레칭') || name.includes('이완') || name.includes('풀기')) ? 'shoulder_stretch' : 'shoulder';
+    }
+    if (name.includes('목') || name.includes('경추') || name.includes('neck')) return 'neck';
+    if (name.includes('팔') || name.includes('이두') || name.includes('삼두') || name.includes('팔꿈치') || name.includes('arm')) return 'arm';
+    if (name.includes('등') || name.includes('허리') || name.includes('요추') || name.includes('척추') || name.includes('back')) return 'back';
+    if (name.includes('골반') || name.includes('고관절') || name.includes('hip') || name.includes('엉덩이')) return 'hip';
+    if (name.includes('무릎') || name.includes('슬관절') || name.includes('knee') || name.includes('대퇴') || name.includes('허벅지')) return 'knee';
+    if (name.includes('발목') || name.includes('족관절') || name.includes('ankle') || name.includes('종아리') || name.includes('발')) return 'ankle';
+
+    // 일반 스트레칭/이완
+    if (name.includes('스트레칭') || name.includes('이완') || name.includes('마사지') || name.includes('풀기')) return 'stretch';
+
     return 'standing';
 }
 
