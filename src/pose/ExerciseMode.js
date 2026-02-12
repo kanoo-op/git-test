@@ -153,7 +153,10 @@ export async function startExerciseMode(exerciseName) {
     const statusEl = document.getElementById('exercise-mode-status');
 
     try {
-        showStatus(statusEl, '카메라 연결 중...');
+        // 모델이 이미 로드되었으면 로딩 메시지 생략
+        const alreadyLoaded = !!getVideoLandmarker();
+
+        if (!alreadyLoaded) showStatus(statusEl, '카메라 연결 중...');
 
         webcamStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
@@ -162,8 +165,10 @@ export async function startExerciseMode(exerciseName) {
         videoEl.srcObject = webcamStream;
         await videoEl.play();
 
-        showStatus(statusEl, 'AI 모델 로딩 중...');
-        await initRealtimePose();
+        if (!alreadyLoaded) {
+            showStatus(statusEl, 'AI 모델 로딩 중...');
+            await initRealtimePose();
+        }
 
         const landmarker = getVideoLandmarker();
         if (!landmarker) {
