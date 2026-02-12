@@ -201,7 +201,7 @@ function getPresetKey(exerciseName) {
 
 // ═══ 운동 모드 시작 ═══
 
-export async function startExerciseMode(exerciseName) {
+export async function startExerciseMode(exerciseName, videoId) {
     const overlay = document.getElementById('exercise-mode-overlay');
     if (!overlay || running) return;
 
@@ -221,6 +221,7 @@ export async function startExerciseMode(exerciseName) {
     initFeedbackPanel();
     updateScore(0);
     updateTimer(0);
+    embedReferenceVideo(videoId, exerciseName);
 
     const videoEl = document.getElementById('exercise-mode-video');
     const canvasEl = document.getElementById('exercise-mode-canvas');
@@ -326,10 +327,41 @@ export function stopExerciseMode() {
     const videoEl = document.getElementById('exercise-mode-video');
     if (videoEl) videoEl.srcObject = null;
 
+    // Clean up reference video iframe
+    const refPlayer = document.getElementById('em-reference-player');
+    if (refPlayer) refPlayer.innerHTML = '';
+
     const overlay = document.getElementById('exercise-mode-overlay');
     if (overlay) overlay.style.display = 'none';
 
     recentScores = [];
+}
+
+// ═══ 참고 영상 임베드 ═══
+
+function embedReferenceVideo(videoId, exerciseName) {
+    const playerEl = document.getElementById('em-reference-player');
+    if (!playerEl) return;
+
+    if (videoId) {
+        playerEl.innerHTML = `<iframe
+            src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&rel=0&modestbranding=1&playsinline=1"
+            allow="autoplay; encrypted-media"
+            allowfullscreen
+        ></iframe>`;
+    } else {
+        const searchQuery = encodeURIComponent((exerciseName || '') + ' 운동 방법');
+        playerEl.innerHTML = `
+            <div class="em-reference-placeholder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                <p>참고 영상이 없습니다</p>
+                <a href="https://www.youtube.com/results?search_query=${searchQuery}" target="_blank" rel="noopener">
+                    YouTube에서 검색하기 &rarr;
+                </a>
+            </div>`;
+    }
 }
 
 // ═══ 3점 각도 계산 ═══

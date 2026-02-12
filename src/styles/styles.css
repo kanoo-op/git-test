@@ -6493,17 +6493,87 @@ input, textarea, select {
 
 .exercise-mode-body {
     flex: 1;
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 280px;
     overflow: hidden;
 }
 
-.exercise-mode-camera-area {
+/* Reference Video Panel */
+.exercise-mode-reference {
+    display: flex;
+    flex-direction: column;
+    background: rgba(15, 15, 15, 0.95);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.em-reference-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.em-reference-header svg {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.em-reference-player {
     flex: 1;
     position: relative;
     background: #000;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.em-reference-player iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.em-reference-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 13px;
+    text-align: center;
+    padding: 20px;
+}
+
+.em-reference-placeholder svg {
+    opacity: 0.3;
+}
+
+.em-reference-placeholder a {
+    color: #3498db;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.em-reference-placeholder a:hover {
+    text-decoration: underline;
+}
+
+.exercise-mode-camera-area {
+    position: relative;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
 .exercise-mode-camera-area video {
@@ -6571,8 +6641,6 @@ input, textarea, select {
 
 /* Feedback Panel */
 .exercise-mode-feedback {
-    width: 280px;
-    flex-shrink: 0;
     background: rgba(20, 20, 20, 0.95);
     border-left: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
@@ -6737,9 +6805,21 @@ input, textarea, select {
 }
 
 /* Responsive */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .exercise-mode-body {
+        grid-template-columns: 0.8fr 1.2fr 240px;
+    }
+}
+
 @media (max-width: 768px) {
     .exercise-mode-body {
-        flex-direction: column;
+        grid-template-columns: 1fr;
+        grid-template-rows: 30vh 1fr auto;
+    }
+
+    .exercise-mode-reference {
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .exercise-mode-feedback {

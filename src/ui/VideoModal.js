@@ -4,6 +4,7 @@ const SEV_DIFF_LABELS = { '쉬움': 'easy', '보통': 'medium', '어려움': 'ha
 const SEV_DIFF_TEXT = { '쉬움': '쉬움 (Easy)', '보통': '보통 (Medium)', '어려움': '어려움 (Hard)' };
 
 let currentExerciseName = '';
+let currentVideoId = '';
 
 export function openExerciseVideo(exerciseName, videoId, difficulty) {
     const overlay = document.getElementById('video-modal-overlay');
@@ -16,6 +17,7 @@ export function openExerciseVideo(exerciseName, videoId, difficulty) {
 
     titleEl.textContent = exerciseName;
     currentExerciseName = exerciseName;
+    currentVideoId = videoId || '';
 
     const diffClass = SEV_DIFF_LABELS[difficulty] || 'medium';
     diffEl.textContent = SEV_DIFF_TEXT[difficulty] || difficulty;
@@ -62,7 +64,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
     if (e.target.closest('#video-modal-exercise-btn')) {
         if (window.startExerciseMode && currentExerciseName) {
-            window.startExerciseMode(currentExerciseName);
+            window.startExerciseMode(currentExerciseName, currentVideoId);
         }
     }
 });

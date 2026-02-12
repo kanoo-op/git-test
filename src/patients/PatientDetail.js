@@ -392,7 +392,8 @@ function renderAssessmentTimeline(patient) {
         item.querySelector('.pd-rec-start')?.addEventListener('click', (e) => {
             e.stopPropagation();
             const name = item.dataset.exercise;
-            if (window.startExerciseMode) window.startExerciseMode(name);
+            const vid = item.dataset.videoId;
+            if (window.startExerciseMode) window.startExerciseMode(name, vid);
         });
 
         // 영상 보기 (기본 클릭)

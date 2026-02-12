@@ -114,8 +114,9 @@ export function showExerciseRecommendations(regionMap) {
         item.querySelector('.rec-exercise-start')?.addEventListener('click', (e) => {
             e.stopPropagation();
             const name = item.dataset.exercise;
+            const vid = item.dataset.videoId;
             if (window.startExerciseMode) {
-                window.startExerciseMode(name);
+                window.startExerciseMode(name, vid);
             }
         });
 

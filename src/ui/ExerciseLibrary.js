@@ -220,7 +220,7 @@ function bindEvents() {
         const difficulty = card.dataset.difficulty;
 
         if (e.target.closest('.ex-lib-btn-start')) {
-            window.startExerciseMode?.(name);
+            window.startExerciseMode?.(name, videoId);
         } else if (e.target.closest('.ex-lib-btn-video')) {
             window.openExerciseVideo?.(name, videoId, difficulty);
         }
