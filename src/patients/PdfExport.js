@@ -1,7 +1,63 @@
 // PdfExport.js - PDF report generation
 
 import * as storage from '../services/Storage.js';
-import { SEV_LABELS, PROGRESS_LABELS, calculateAge, severityRank } from '../utils/helpers.js';
+import { SEV_LABELS, SEV_PDF_COLORS, PROGRESS_LABELS, calculateAge, severityRank, regionSortIndex } from '../utils/helpers.js';
+import { captureQuadScreenshot } from '../core/SceneManager.js';
+import { applyRegionColors, resetRegionColors } from '../anatomy/Highlights.js';
+import { getMappingRegions, PREDEFINED_REGIONS } from '../anatomy/Regions.js';
+
+// ── Korean font loader (cached) ──
+
+let cachedFontBase64 = null;
+
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 8192;
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode.apply(null, chunk);
+    }
+    return btoa(binary);
+}
+
+let cachedFontFileName = null;
+
+async function loadKoreanFont(doc) {
+    if (cachedFontBase64 && cachedFontFileName) {
+        doc.addFileToVFS(cachedFontFileName, cachedFontBase64);
+        doc.addFont(cachedFontFileName, 'KoreanFont', 'normal');
+        doc.addFont(cachedFontFileName, 'KoreanFont', 'bold');
+        doc.setFont('KoreanFont', 'normal');
+        return true;
+    }
+
+    // TTF만 지원 (jsPDF는 OTF/CFF 렌더링 불가)
+    const fontPaths = [
+        '/fonts/NanumGothic-Regular.ttf',
+        '/fonts/NotoSansKR-Regular.ttf',
+    ];
+
+    for (const path of fontPaths) {
+        try {
+            const res = await fetch(path);
+            if (!res.ok) continue;
+            const fontData = await res.arrayBuffer();
+            if (fontData.byteLength < 500000) continue;
+            cachedFontBase64 = arrayBufferToBase64(fontData);
+            cachedFontFileName = path.split('/').pop();
+            doc.addFileToVFS(cachedFontFileName, cachedFontBase64);
+            // normal + bold 모두 등록 (setFont(undefined,'bold') 시 폰트 리셋 방지)
+            doc.addFont(cachedFontFileName, 'KoreanFont', 'normal');
+            doc.addFont(cachedFontFileName, 'KoreanFont', 'bold');
+            doc.setFont('KoreanFont', 'normal');
+            return true;
+        } catch (_) {}
+    }
+
+    window.showToast?.('한국어 폰트를 로드하지 못했습니다. PDF에서 한글이 깨질 수 있습니다.', 'warning');
+    return false;
+}
 
 export async function exportAssessmentPDF(patientId, assessmentId) {
     const patient = storage.getPatient(patientId);
@@ -13,22 +69,7 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
         const doc = new jsPDF('p', 'mm', 'a4');
         const pageW = doc.internal.pageSize.getWidth();
 
-        // Load Korean font
-        let koreanFontLoaded = false;
-        try {
-            const fontRes = await fetch('/fonts/NotoSansKR-Regular.ttf');
-            if (fontRes.ok) {
-                const fontData = await fontRes.arrayBuffer();
-                const base64 = btoa(String.fromCharCode(...new Uint8Array(fontData)));
-                doc.addFileToVFS('NotoSansKR-Regular.ttf', base64);
-                doc.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
-                doc.setFont('NotoSansKR');
-                koreanFontLoaded = true;
-            }
-        } catch (_) { /* Fallback to default font */ }
-        if (!koreanFontLoaded) {
-            window.showToast?.('한국어 폰트를 로드하지 못했습니다. PDF에서 한글이 깨질 수 있습니다.', 'warning');
-        }
+        await loadKoreanFont(doc);
 
         let y = 16;
 
@@ -71,11 +112,11 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
         const selections = assessment.selections || [];
         if (selections.length > 0) {
             doc.setFontSize(11);
-            doc.setFont(undefined, 'bold');
+            doc.setFont('KoreanFont', 'bold');
             doc.text('부위별 심각도', 14, y);
             y += 6;
             doc.setFontSize(9);
-            doc.setFont(undefined, 'normal');
+            doc.setFont('KoreanFont', 'normal');
             doc.setTextColor(100);
             doc.text('부위', 14, y);
             doc.text('조직', 70, y);
@@ -87,22 +128,30 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
             y += 4;
             doc.setTextColor(60);
 
-            // Deduplicate by meshId
+            // 부위(region) 기준 중복 제거 — 같은 부위는 가장 높은 심각도만 표시
             const uniqueSelections = new Map();
             for (const s of selections) {
-                if (!uniqueSelections.has(s.meshId) || severityRank(s.severity) > severityRank(uniqueSelections.get(s.meshId).severity)) {
-                    uniqueSelections.set(s.meshId, s);
+                const key = s.region || s.regionKey || s.meshId;
+                if (!uniqueSelections.has(key) || severityRank(s.severity) > severityRank(uniqueSelections.get(key).severity)) {
+                    uniqueSelections.set(key, s);
                 }
             }
 
-            for (const [, s] of uniqueSelections) {
+            const sortedSelections = [...uniqueSelections.values()].sort(
+                (a, b) => regionSortIndex(a.region || a.meshId) - regionSortIndex(b.region || b.meshId)
+            );
+            for (const s of sortedSelections) {
                 if (y > 270) {
                     doc.addPage();
                     y = 20;
                 }
+                doc.setTextColor(60);
                 doc.text(String(s.region || s.meshId || '-').substring(0, 28), 14, y);
                 doc.text(String(s.tissue || '-').substring(0, 20), 70, y);
+                const sevColor = SEV_PDF_COLORS[s.severity] || [60, 60, 60];
+                doc.setTextColor(...sevColor);
                 doc.text(SEV_LABELS[s.severity] || s.severity || '-', 120, y);
+                doc.setTextColor(60);
                 doc.text(String(s.notes || '-').substring(0, 30), 150, y);
                 y += 5;
             }
@@ -116,11 +165,11 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
             y += 6;
             if (y > 260) { doc.addPage(); y = 20; }
             doc.setFontSize(11);
-            doc.setFont(undefined, 'bold');
+            doc.setFont('KoreanFont', 'bold');
             doc.text('전체 소견', 14, y);
             y += 6;
             doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
+            doc.setFont('KoreanFont', 'normal');
             const noteLines = doc.splitTextToSize(assessment.overallNotes, pageW - 28);
             doc.text(noteLines, 14, y);
             y += noteLines.length * 5;
@@ -132,11 +181,11 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
             y += 6;
             if (y > 260) { doc.addPage(); y = 20; }
             doc.setFontSize(11);
-            doc.setFont(undefined, 'bold');
+            doc.setFont('KoreanFont', 'bold');
             doc.text('자세 분석 결과', 14, y);
             y += 6;
             doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
+            doc.setFont('KoreanFont', 'normal');
             if (pa.metrics) {
                 const m = pa.metrics;
                 if (m.forwardHead) { doc.text(`전방 두부 각도: ${m.forwardHead.value}° (${SEV_LABELS[m.forwardHead.severity]})`, 14, y); y += 5; }
@@ -158,6 +207,38 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
                     }
                 }
             }
+        }
+
+        // 3D Quad-view screenshot (증상 부위 하이라이트 적용)
+        try {
+            const quadImg = captureAssessmentQuadScreenshot(assessment);
+            if (quadImg) {
+                y += 6;
+                if (y > 160) { doc.addPage(); y = 20; }
+                doc.setFontSize(11);
+                doc.setFont('KoreanFont', 'bold');
+                doc.setTextColor(50);
+                doc.text('3D 모델 다각도 뷰 (증상 부위 표시)', 14, y);
+                y += 6;
+
+                const imgW = pageW - 28;
+                const imgH = imgW * 0.6;
+                doc.addImage(quadImg, 'PNG', 14, y, imgW, imgH);
+                y += imgH + 2;
+
+                // View labels
+                doc.setFontSize(8);
+                doc.setFont('KoreanFont', 'normal');
+                doc.setTextColor(100);
+                const halfW = imgW / 2;
+                doc.text('전면', 14 + halfW * 0.25, y);
+                doc.text('후면', 14 + halfW * 1.25, y);
+                doc.text('좌측', 14 + halfW * 0.25, y + 4);
+                doc.text('우측', 14 + halfW * 1.25, y + 4);
+                y += 8;
+            }
+        } catch (e) {
+            // Skip quad screenshot if 3D model not available
         }
 
         // Footer
@@ -196,21 +277,7 @@ export async function exportProgressPDF(patientId) {
         const doc = new jsPDF('p', 'mm', 'a4');
         const pageW = doc.internal.pageSize.getWidth();
 
-        let koreanFontLoaded = false;
-        try {
-            const fontRes = await fetch('/fonts/NotoSansKR-Regular.ttf');
-            if (fontRes.ok) {
-                const fontData = await fontRes.arrayBuffer();
-                const base64 = btoa(String.fromCharCode(...new Uint8Array(fontData)));
-                doc.addFileToVFS('NotoSansKR-Regular.ttf', base64);
-                doc.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
-                doc.setFont('NotoSansKR');
-                koreanFontLoaded = true;
-            }
-        } catch (_) {}
-        if (!koreanFontLoaded) {
-            window.showToast?.('한국어 폰트를 로드하지 못했습니다. PDF에서 한글이 깨질 수 있습니다.', 'warning');
-        }
+        await loadKoreanFont(doc);
 
         let y = 16;
 
@@ -246,11 +313,11 @@ export async function exportProgressPDF(patientId) {
         const daysBetween = Math.round((last.date - first.date) / (1000 * 60 * 60 * 24));
 
         doc.setFontSize(11);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('KoreanFont', 'bold');
         doc.text('평가 요약', 14, y);
         y += 6;
         doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
+        doc.setFont('KoreanFont', 'normal');
         doc.text(`평가 기간: ${firstDate} ~ ${lastDate} (${daysBetween}일)`, 14, y); y += 5;
         doc.text(`총 평가 횟수: ${assessments.length}회`, 14, y); y += 8;
 
@@ -261,11 +328,11 @@ export async function exportProgressPDF(patientId) {
 
         if (allRegions.size > 0) {
             doc.setFontSize(11);
-            doc.setFont(undefined, 'bold');
+            doc.setFont('KoreanFont', 'bold');
             doc.text('부위별 심각도 변화', 14, y);
             y += 6;
             doc.setFontSize(9);
-            doc.setFont(undefined, 'normal');
+            doc.setFont('KoreanFont', 'normal');
             doc.setTextColor(100);
             doc.text('부위', 14, y);
             doc.text('첫 평가', 80, y);
@@ -277,16 +344,25 @@ export async function exportProgressPDF(patientId) {
             y += 4;
             doc.setTextColor(60);
 
-            for (const region of allRegions) {
+            const sortedRegions = [...allRegions].sort(
+                (a, b) => regionSortIndex(a) - regionSortIndex(b)
+            );
+            for (const region of sortedRegions) {
                 if (y > 270) { doc.addPage(); y = 20; }
                 const fs = firstSevMap.get(region) || 'normal';
                 const ls = lastSevMap.get(region) || 'normal';
                 const fr = severityRank(fs);
                 const lr = severityRank(ls);
                 const change = lr < fr ? '↓ 호전' : lr > fr ? '↑ 악화' : '→ 유지';
+                doc.setTextColor(60);
                 doc.text(String(region).substring(0, 30), 14, y);
+                const fsColor = SEV_PDF_COLORS[fs] || [60, 60, 60];
+                doc.setTextColor(...fsColor);
                 doc.text(SEV_LABELS[fs] || fs, 80, y);
+                const lsColor = SEV_PDF_COLORS[ls] || [60, 60, 60];
+                doc.setTextColor(...lsColor);
                 doc.text(SEV_LABELS[ls] || ls, 120, y);
+                doc.setTextColor(60);
                 doc.text(change, 165, y);
                 y += 5;
             }
@@ -297,12 +373,12 @@ export async function exportProgressPDF(patientId) {
             y += 6;
             if (y > 260) { doc.addPage(); y = 20; }
             doc.setFontSize(11);
-            doc.setFont(undefined, 'bold');
+            doc.setFont('KoreanFont', 'bold');
             doc.setTextColor(50);
             doc.text('최근 치료 계획 (Plan)', 14, y);
             y += 6;
             doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
+            doc.setFont('KoreanFont', 'normal');
             doc.setTextColor(60);
             const p = last.soapNotes.plan;
             const planItems = [];
@@ -350,21 +426,7 @@ export async function exportReferralPDF(patientId, referralData) {
         const doc = new jsPDF('p', 'mm', 'a4');
         const pageW = doc.internal.pageSize.getWidth();
 
-        let koreanFontLoaded = false;
-        try {
-            const fontRes = await fetch('/fonts/NotoSansKR-Regular.ttf');
-            if (fontRes.ok) {
-                const fontData = await fontRes.arrayBuffer();
-                const base64 = btoa(String.fromCharCode(...new Uint8Array(fontData)));
-                doc.addFileToVFS('NotoSansKR-Regular.ttf', base64);
-                doc.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
-                doc.setFont('NotoSansKR');
-                koreanFontLoaded = true;
-            }
-        } catch (_) {}
-        if (!koreanFontLoaded) {
-            window.showToast?.('한국어 폰트를 로드하지 못했습니다. PDF에서 한글이 깨질 수 있습니다.', 'warning');
-        }
+        await loadKoreanFont(doc);
 
         let y = 16;
 
@@ -394,12 +456,12 @@ export async function exportReferralPDF(patientId, referralData) {
         doc.line(14, y, pageW - 14, y);
         y += 6;
         doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('KoreanFont', 'bold');
         doc.setTextColor(50);
         doc.text('환자 정보', 14, y);
         y += 7;
         doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
+        doc.setFont('KoreanFont', 'normal');
         doc.setTextColor(60);
 
         const age = patient.dob ? calculateAge(patient.dob) : '-';
@@ -416,12 +478,12 @@ export async function exportReferralPDF(patientId, referralData) {
 
         if (latest) {
             doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
+            doc.setFont('KoreanFont', 'bold');
             doc.setTextColor(50);
             doc.text('최근 평가 요약', 14, y);
             y += 7;
             doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
+            doc.setFont('KoreanFont', 'normal');
             doc.setTextColor(60);
             doc.text(`평가일: ${new Date(latest.date).toLocaleDateString('ko-KR')}`, 14, y); y += 5;
 
@@ -442,12 +504,12 @@ export async function exportReferralPDF(patientId, referralData) {
         y += 4;
         if (y > 240) { doc.addPage(); y = 20; }
         doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('KoreanFont', 'bold');
         doc.setTextColor(50);
         doc.text('의뢰 목적', 14, y);
         y += 7;
         doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
+        doc.setFont('KoreanFont', 'normal');
         doc.setTextColor(60);
         const purposeLines = doc.splitTextToSize(purpose || '-', pageW - 28);
         doc.text(purposeLines, 14, y);
@@ -486,6 +548,53 @@ export async function exportReferralPDF(patientId, referralData) {
 }
 
 // ── Helpers ──
+
+/**
+ * 평가 데이터의 증상 부위를 3D 모델에 하이라이트 적용 후 4분할 캡처
+ */
+function captureAssessmentQuadScreenshot(assessment) {
+    // selections에서 regionKey별 심각도 추출
+    const regionSeverityMap = {};
+    for (const sel of (assessment.selections || [])) {
+        if (sel.regionKey && sel.severity && sel.severity !== 'normal') {
+            // 같은 부위 중 더 높은 심각도 유지
+            const existing = regionSeverityMap[sel.regionKey];
+            if (!existing || severityRank(sel.severity) > severityRank(existing)) {
+                regionSeverityMap[sel.regionKey] = sel.severity;
+            }
+        }
+    }
+
+    // 매핑 데이터에서 메쉬/바운드 정보 가져와서 activeRegions 구성
+    const mappingRegions = getMappingRegions();
+    const activeRegions = [];
+
+    for (const [regionKey, sev] of Object.entries(regionSeverityMap)) {
+        const regionData = mappingRegions[regionKey] || {};
+        const predefined = PREDEFINED_REGIONS.find(r => r.id === regionKey);
+
+        activeRegions.push({
+            side: predefined ? predefined.side : null,
+            xMin: regionData.xMin ?? null,
+            xMax: regionData.xMax ?? null,
+            yMin: regionData.yMin ?? null,
+            yMax: regionData.yMax ?? null,
+            meshes: regionData.meshes || [],
+            severity: sev
+        });
+    }
+
+    // 하이라이트 적용 → 캡처 → 리셋
+    if (activeRegions.length > 0) {
+        applyRegionColors(activeRegions);
+    }
+
+    const dataUrl = captureQuadScreenshot();
+
+    resetRegionColors();
+
+    return dataUrl;
+}
 
 function buildSevMap(assessment) {
     const map = new Map();
@@ -567,12 +676,12 @@ function renderSoapPdfSection(doc, y, pageW, soap) {
         y += 6;
         if (y > 260) { doc.addPage(); y = 20; }
         doc.setFontSize(11);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('KoreanFont', 'bold');
         doc.setTextColor(50);
         doc.text(section.title, 14, y);
         y += 6;
         doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
+        doc.setFont('KoreanFont', 'normal');
         doc.setTextColor(60);
         for (const line of items) {
             if (y > 270) { doc.addPage(); y = 20; }

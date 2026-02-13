@@ -95,7 +95,7 @@ async def validate_refresh_token(db: AsyncSession, token_value: str) -> User | N
     return user
 
 
-async def revoke_all_user_tokens(db: AsyncSession, user_id: uuid.UUID):
+async def revoke_all_user_tokens(db: AsyncSession, user_id: str):
     result = await db.execute(
         select(RefreshToken).where(RefreshToken.user_id == user_id, RefreshToken.revoked == False)
     )

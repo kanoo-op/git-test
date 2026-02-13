@@ -491,6 +491,10 @@ input, textarea, select {
     color: var(--text-primary);
 }
 
+.footer-nav-item {
+    margin-bottom: 4px;
+}
+
 /* ===== Main Content ===== */
 .main-content {
     flex: 1;
@@ -2360,6 +2364,36 @@ input, textarea, select {
 
 .voice-autofill-btn:hover {
     background: rgba(74, 124, 111, 0.15);
+}
+
+.soap-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.soap-modal-header h3 {
+    margin: 0;
+}
+
+.soap-autofill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border: 1px solid var(--accent-primary);
+    border-radius: 16px;
+    background: rgba(74, 124, 111, 0.08);
+    color: var(--accent-primary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.soap-autofill-btn:hover {
+    background: rgba(74, 124, 111, 0.18);
 }
 
 .voice-status {
@@ -6849,5 +6883,449 @@ input, textarea, select {
 
     .em-timer {
         font-size: 16px;
+    }
+}
+
+/* ========================================
+   Therapy Centers (주변 치료센터)
+   ======================================== */
+
+.therapy-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 0;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+}
+
+.therapy-left-panel {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-light);
+    overflow: hidden;
+}
+
+.therapy-search-controls {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+}
+
+.therapy-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    overflow: hidden;
+    transition: border-color 0.15s;
+}
+
+.therapy-search-bar:focus-within {
+    border-color: var(--accent-primary);
+}
+
+.therapy-search-bar .therapy-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+}
+
+.therapy-search-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border: none;
+    background: var(--accent-primary);
+    color: #fff;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+}
+
+.therapy-search-icon-btn:hover {
+    opacity: 0.85;
+}
+
+.therapy-sub-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.therapy-location-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.therapy-location-btn:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.therapy-current-location {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--accent-light);
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--accent-primary);
+}
+
+.therapy-current-location svg {
+    flex-shrink: 0;
+}
+
+.therapy-clear-loc-btn {
+    background: none;
+    border: none;
+    color: var(--accent-primary);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    opacity: 0.6;
+}
+
+.therapy-clear-loc-btn:hover {
+    opacity: 1;
+}
+
+.therapy-results-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+.therapy-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--text-tertiary);
+    gap: 12px;
+}
+
+.therapy-loading .spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--border-light);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.therapy-loading span {
+    font-size: 13px;
+}
+
+.therapy-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--text-tertiary);
+    text-align: center;
+    gap: 8px;
+}
+
+.therapy-empty svg {
+    opacity: 0.4;
+}
+
+.therapy-empty p {
+    font-size: 13px;
+    margin: 0;
+}
+
+.therapy-error {
+    padding: 12px;
+    margin: 12px;
+    background: rgba(198, 40, 40, 0.08);
+    color: var(--status-severe);
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.therapy-result-card {
+    padding: 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.therapy-result-card:hover {
+    border-color: var(--accent-primary);
+    background: var(--accent-light);
+}
+
+.therapy-result-card.active {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(74, 124, 111, 0.15);
+}
+
+.therapy-result-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.therapy-result-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.therapy-result-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.4;
+    flex: 1;
+}
+
+.therapy-result-category {
+    font-size: 11px;
+    color: var(--accent-primary);
+    background: var(--accent-light);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.therapy-result-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.therapy-result-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.therapy-result-row svg {
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+}
+
+.therapy-result-link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent-primary);
+    text-decoration: none;
+    padding: 4px 0;
+}
+
+.therapy-result-link-btn:hover {
+    text-decoration: underline;
+}
+
+.therapy-map-panel {
+    position: relative;
+    background: var(--bg-tertiary);
+}
+
+.therapy-map-container {
+    width: 100%;
+    height: 100%;
+}
+
+#therapy-naver-map {
+    width: 100%;
+    height: 100%;
+}
+
+/* Setup Notice */
+.therapy-setup-notice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px;
+    text-align: center;
+    min-height: 400px;
+}
+
+.therapy-setup-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    color: var(--accent-primary);
+}
+
+.therapy-setup-notice h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.therapy-setup-notice p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 0 20px 0;
+    max-width: 400px;
+}
+
+.therapy-setup-notice .therapy-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.therapy-setup-guide {
+    margin-top: 24px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    text-align: left;
+    max-width: 420px;
+    width: 100%;
+}
+
+.therapy-setup-guide h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.therapy-setup-guide ol {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+}
+
+/* Naver API Settings in DevSettings */
+.naver-api-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-light);
+}
+
+.naver-api-section .setting-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.naver-api-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.naver-api-status svg {
+    width: 10px;
+    height: 10px;
+}
+
+.dev-settings-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: inherit;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+}
+
+.dev-settings-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+/* Dark Theme - Therapy Centers */
+[data-theme="dark"] .therapy-result-card {
+    background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .therapy-result-category {
+    background: rgba(74, 124, 111, 0.2);
+}
+
+[data-theme="dark"] .therapy-setup-guide {
+    background: var(--bg-tertiary);
+}
+
+/* Responsive - Therapy Centers */
+@media (max-width: 768px) {
+    .therapy-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 300px;
+    }
+
+    .therapy-left-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--border-light);
     }
 }

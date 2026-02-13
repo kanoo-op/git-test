@@ -190,3 +190,75 @@ export function captureScreenshot() {
     renderer.render(scene, camera);
     return renderer.domElement.toDataURL('image/png');
 }
+
+/**
+ * Capture a quad-view screenshot (front/back/left/right)
+ * @returns {string|null} data URL of the quad screenshot
+ */
+export function captureQuadScreenshot() {
+    if (!renderer || !scene) return null;
+
+    // 현재 렌더러 크기 저장
+    const prevSize = new THREE.Vector2();
+    renderer.getSize(prevSize);
+
+    // 고정 크기로 강제 설정 (캔버스 가시성과 무관하게 동작)
+    const W = 1024;
+    const H = 768;
+    renderer.setSize(W, H, false);
+
+    // Model center
+    const center = new THREE.Vector3(0, 0.85, 0);
+    const dist = 2.5;
+    const yOff = 0.3;
+
+    const views = [
+        [0, yOff, dist],       // Front
+        [0, yOff, -dist],      // Back
+        [-dist, yOff, 0],      // Left
+        [dist, yOff, 0],       // Right
+    ];
+
+    const rects = [
+        { x: 0, y: 0, w: 0.5, h: 0.5 },
+        { x: 0.5, y: 0, w: 0.5, h: 0.5 },
+        { x: 0, y: 0.5, w: 0.5, h: 0.5 },
+        { x: 0.5, y: 0.5, w: 0.5, h: 0.5 },
+    ];
+
+    const tempCam = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
+
+    renderer.setScissorTest(true);
+    renderer.autoClear = false;
+    renderer.setViewport(0, 0, W, H);
+    renderer.setScissor(0, 0, W, H);
+    renderer.clear();
+
+    for (let i = 0; i < 4; i++) {
+        const r = rects[i];
+        const pos = views[i];
+        tempCam.position.set(center.x + pos[0], center.y + pos[1], center.z + pos[2]);
+        tempCam.lookAt(center);
+        tempCam.aspect = (r.w * W) / (r.h * H);
+        tempCam.updateProjectionMatrix();
+
+        const x = r.x * W;
+        const y = (1 - r.y - r.h) * H;
+        const w = r.w * W;
+        const h = r.h * H;
+
+        renderer.setViewport(x, y, w, h);
+        renderer.setScissor(x, y, w, h);
+        renderer.render(scene, tempCam);
+    }
+
+    renderer.setScissorTest(false);
+    renderer.autoClear = true;
+
+    const dataUrl = renderer.domElement.toDataURL('image/png');
+
+    // 원래 렌더러 크기 복원
+    renderer.setSize(prevSize.x, prevSize.y, false);
+
+    return dataUrl;
+}

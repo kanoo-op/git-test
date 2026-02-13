@@ -71,8 +71,8 @@ function drawMetricIndicators(ctx, lm, w, h, metrics) {
     ctx.font = '12px Inter, sans-serif';
     ctx.textAlign = 'left';
 
-    // 전방 두부 - 귀-어깨 라인 표시
-    if (metrics.forwardHeadAngle.severity !== 'normal') {
+    // 전방 두부 - 귀-어깨 라인 표시 (측면 촬영에서만)
+    if (metrics.forwardHeadAngle.severity !== 'normal' && !metrics.forwardHeadAngle.skipped) {
         const color = SEV_OVERLAY_COLORS[metrics.forwardHeadAngle.severity];
         drawIndicatorLine(ctx, lm[LM.LEFT_EAR], lm[LM.LEFT_SHOULDER], w, h, color);
         drawIndicatorLine(ctx, lm[LM.RIGHT_EAR], lm[LM.RIGHT_SHOULDER], w, h, color);
@@ -81,8 +81,8 @@ function drawMetricIndicators(ctx, lm, w, h, metrics) {
         drawLabel(ctx, `${metrics.forwardHeadAngle.value}°`, midX, midY, color);
     }
 
-    // 어깨 높이차
-    if (metrics.shoulderLevelDiff.severity !== 'normal') {
+    // 어깨 높이차 (정면 촬영에서만)
+    if (metrics.shoulderLevelDiff.severity !== 'normal' && !metrics.shoulderLevelDiff.skipped) {
         const color = SEV_OVERLAY_COLORS[metrics.shoulderLevelDiff.severity];
         drawIndicatorLine(ctx, lm[LM.LEFT_SHOULDER], lm[LM.RIGHT_SHOULDER], w, h, color);
         const midX = ((lm[LM.LEFT_SHOULDER].x + lm[LM.RIGHT_SHOULDER].x) / 2) * w;
@@ -90,8 +90,8 @@ function drawMetricIndicators(ctx, lm, w, h, metrics) {
         drawLabel(ctx, `Δ${metrics.shoulderLevelDiff.value}cm`, midX, midY, color);
     }
 
-    // 골반 기울기
-    if (metrics.pelvicTilt.severity !== 'normal') {
+    // 골반 기울기 (정면 촬영에서만)
+    if (metrics.pelvicTilt.severity !== 'normal' && !metrics.pelvicTilt.skipped) {
         const color = SEV_OVERLAY_COLORS[metrics.pelvicTilt.severity];
         drawIndicatorLine(ctx, lm[LM.LEFT_HIP], lm[LM.RIGHT_HIP], w, h, color);
         const midX = ((lm[LM.LEFT_HIP].x + lm[LM.RIGHT_HIP].x) / 2) * w;

@@ -123,16 +123,76 @@ export function calculatePostureMetrics(landmarks, worldLandmarks, imageElement)
     const imgW = imageElement.width || imageElement.videoWidth || 640;
 
     const useWorld = !!worldLandmarks;
+    const viewType = detectViewType(landmarks, worldLandmarks, useWorld);
     const metrics = {};
 
-    metrics.forwardHeadAngle = calcForwardHeadAngle(landmarks, worldLandmarks, useWorld);
-    metrics.shoulderLevelDiff = calcShoulderLevelDiff(landmarks, worldLandmarks, useWorld, imgH);
-    metrics.pelvicTilt = calcPelvicTilt(landmarks, worldLandmarks, useWorld);
-    metrics.trunkLateralTilt = calcTrunkLateralTilt(landmarks, worldLandmarks, useWorld);
-    metrics.kneeAlignment = calcKneeAlignment(landmarks, worldLandmarks, useWorld);
-    metrics.upperBackKyphosis = calcUpperBackKyphosis(landmarks, worldLandmarks, useWorld);
+    // 전방 두부 각도 & 상부 등 굽힘: 측면에서만 유효
+    if (viewType === 'lateral') {
+        metrics.forwardHeadAngle = calcForwardHeadAngle(landmarks, worldLandmarks, useWorld);
+        metrics.upperBackKyphosis = calcUpperBackKyphosis(landmarks, worldLandmarks, useWorld);
+    } else {
+        metrics.forwardHeadAngle = { value: 0, unit: '°', severity: 'normal', label: '전방 두부 각도', skipped: true };
+        metrics.upperBackKyphosis = { value: 0, unit: '', severity: 'normal', label: '상부 등 굽힘', skipped: true };
+    }
 
+    // 어깨 높이차, 골반 기울기, 체간 기울기, 무릎 정렬: 정면에서만 유효
+    if (viewType === 'anterior') {
+        metrics.shoulderLevelDiff = calcShoulderLevelDiff(landmarks, worldLandmarks, useWorld, imgH);
+        metrics.pelvicTilt = calcPelvicTilt(landmarks, worldLandmarks, useWorld);
+        metrics.trunkLateralTilt = calcTrunkLateralTilt(landmarks, worldLandmarks, useWorld);
+        metrics.kneeAlignment = calcKneeAlignment(landmarks, worldLandmarks, useWorld);
+    } else {
+        metrics.shoulderLevelDiff = { value: 0, unit: 'cm', severity: 'normal', label: '어깨 높이차', skipped: true };
+        metrics.pelvicTilt = { value: 0, unit: '°', severity: 'normal', label: '골반 기울기', skipped: true };
+        metrics.trunkLateralTilt = { value: 0, unit: '°', severity: 'normal', label: '체간 측방 기울기', skipped: true };
+        metrics.kneeAlignment = { label: '무릎 정렬', left: { type: 'normal', severity: 'normal' }, right: { type: 'normal', severity: 'normal' }, skipped: true };
+    }
+
+    metrics._viewType = viewType;
     return metrics;
+}
+
+/**
+ * 촬영 방향 자동 감지: 양쪽 어깨 간 거리와 어깨-귀 깊이(Z) 비교
+ * - 정면(anterior): 양 어깨가 넓게 보이고 좌우 귀가 모두 보임
+ * - 측면(lateral): 양 어깨가 겹쳐 좁게 보이고 한쪽 귀만 보임
+ */
+function detectViewType(lm, wlm, useWorld) {
+    const shoulderL = useWorld ? wlm[LM.LEFT_SHOULDER] : lm[LM.LEFT_SHOULDER];
+    const shoulderR = useWorld ? wlm[LM.RIGHT_SHOULDER] : lm[LM.RIGHT_SHOULDER];
+    const hipL = useWorld ? wlm[LM.LEFT_HIP] : lm[LM.LEFT_HIP];
+    const hipR = useWorld ? wlm[LM.RIGHT_HIP] : lm[LM.RIGHT_HIP];
+
+    // 어깨 간 수평 거리 vs 몸통 높이 비율로 판단
+    const shoulderWidth = Math.abs(shoulderL.x - shoulderR.x);
+    const torsoHeight = Math.abs(
+        ((shoulderL.y + shoulderR.y) / 2) - ((hipL.y + hipR.y) / 2)
+    );
+
+    if (torsoHeight < 0.001) return 'anterior';
+
+    const widthToHeightRatio = shoulderWidth / torsoHeight;
+
+    // world landmarks Z 거리도 활용 (있으면)
+    if (useWorld && shoulderL.z !== undefined && shoulderR.z !== undefined) {
+        const shoulderDepthDiff = Math.abs(shoulderL.z - shoulderR.z);
+        // 측면: 어깨 깊이차가 크고 수평거리가 좁음
+        if (shoulderDepthDiff > 0.10 && widthToHeightRatio < 0.5) return 'lateral';
+        if (shoulderDepthDiff < 0.05 && widthToHeightRatio > 0.6) return 'anterior';
+    }
+
+    // normalized landmarks만 있을 때: 수평거리/몸통높이 비율로 판단
+    // 정면: 어깨가 넓게 보임 (비율 > 0.7), 측면: 어깨가 겹쳐 좁음 (비율 < 0.4)
+    if (widthToHeightRatio > 0.55) return 'anterior';
+    if (widthToHeightRatio < 0.35) return 'lateral';
+
+    // 애매한 경우: 양쪽 귀 visibility 비교
+    const earLVis = lm[LM.LEFT_EAR]?.visibility || 0;
+    const earRVis = lm[LM.RIGHT_EAR]?.visibility || 0;
+    const earVisDiff = Math.abs(earLVis - earRVis);
+    if (earVisDiff > 0.3) return 'lateral';
+
+    return 'anterior';
 }
 
 function calcForwardHeadAngle(lm, wlm, useWorld) {
@@ -145,30 +205,39 @@ function calcForwardHeadAngle(lm, wlm, useWorld) {
     const angleR = calcAngleFromVertical(earR, shoulderR);
 
     const avgAngle = (angleL + angleR) / 2;
-    const severity = classifySeverity(avgAngle, 10, 20, 30);
+    // 임상 기준: 15° 미만 정상, 15-25° 경도, 25-35° 중등도, 35°+ 중증
+    const severity = classifySeverity(avgAngle, 15, 25, 35);
 
     return { value: Math.round(avgAngle * 10) / 10, unit: '°', severity, label: '전방 두부 각도' };
 }
 
 function calcShoulderLevelDiff(lm, wlm, useWorld, imgH) {
+    // 단순 계산: 왼쪽 어깨 Y - 오른쪽 어깨 Y 좌표 차이
     const shoulderL = useWorld ? wlm[LM.LEFT_SHOULDER] : lm[LM.LEFT_SHOULDER];
     const shoulderR = useWorld ? wlm[LM.RIGHT_SHOULDER] : lm[LM.RIGHT_SHOULDER];
 
     let diff;
     if (useWorld) {
+        // world landmarks: 미터 단위 → cm 변환
         diff = Math.abs(shoulderL.y - shoulderR.y) * 100;
     } else {
-        const shoulderToHipHeight = Math.abs(
-            ((lm[LM.LEFT_SHOULDER].y + lm[LM.RIGHT_SHOULDER].y) / 2) -
-            ((lm[LM.LEFT_HIP].y + lm[LM.RIGHT_HIP].y) / 2)
+        // normalized landmarks (0~1): Y차이 × 이미지 높이 = 픽셀차,
+        // 어깨~발목 높이를 약 140cm로 추정하여 cm 환산
+        const ankleY = Math.max(
+            lm[LM.LEFT_ANKLE]?.y || 0,
+            lm[LM.RIGHT_ANKLE]?.y || 0
         );
-        const pixelPerCm = shoulderToHipHeight > 0 ? (45 / shoulderToHipHeight) : 1;
-        diff = Math.abs(shoulderL.y - shoulderR.y) * pixelPerCm;
+        const shoulderMidY = (lm[LM.LEFT_SHOULDER].y + lm[LM.RIGHT_SHOULDER].y) / 2;
+        const bodySpan = Math.abs(ankleY - shoulderMidY);
+        const cmPerUnit = bodySpan > 0.01 ? (140 / bodySpan) : (imgH * 0.5);
+        diff = Math.abs(shoulderL.y - shoulderR.y) * cmPerUnit;
     }
 
-    const severity = classifySeverity(diff, 1, 2, 3);
-    const lowerSide = (useWorld ? shoulderL.y : lm[LM.LEFT_SHOULDER].y) >
-                      (useWorld ? shoulderR.y : lm[LM.RIGHT_SHOULDER].y) ? 'left' : 'right';
+    // 임상 기준: 1.5cm 미만 정상, 1.5-3cm 경도, 3-5cm 중등도, 5cm+ 중증
+    const severity = classifySeverity(diff, 1.5, 3, 5);
+
+    // MediaPipe: Y값이 클수록 아래 → Y값이 더 큰 쪽이 낮은 어깨
+    const lowerSide = shoulderL.y > shoulderR.y ? 'left' : 'right';
 
     return { value: Math.round(diff * 10) / 10, unit: 'cm', severity, label: '어깨 높이차', side: lowerSide };
 }
@@ -181,7 +250,8 @@ function calcPelvicTilt(lm, wlm, useWorld) {
     const dy = hipL.y - hipR.y;
     const angle = Math.abs(Math.atan2(dy, dx)) * (180 / Math.PI);
 
-    const severity = classifySeverity(angle, 3, 6, 10);
+    // 임상 기준: 5° 미만 정상, 5-10° 경도, 10-15° 중등도, 15°+ 중증
+    const severity = classifySeverity(angle, 5, 10, 15);
     const lowerSide = dy > 0 ? 'left' : 'right';
 
     return { value: Math.round(angle * 10) / 10, unit: '°', severity, label: '골반 기울기', side: lowerSide };
@@ -206,7 +276,8 @@ function calcTrunkLateralTilt(lm, wlm, useWorld) {
     if (trunkLen < 0.001) return { value: 0, unit: '°', severity: 'normal', label: '체간 측방 기울기' };
 
     const angle = Math.abs(Math.atan2(trunkDx, -trunkDy)) * (180 / Math.PI);
-    const severity = classifySeverity(angle, 2, 5, 8);
+    // 임상 기준: 3° 미만 정상, 3-7° 경도, 7-12° 중등도, 12°+ 중증
+    const severity = classifySeverity(angle, 3, 7, 12);
 
     return { value: Math.round(angle * 10) / 10, unit: '°', severity, label: '체간 측방 기울기' };
 }

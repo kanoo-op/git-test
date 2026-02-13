@@ -8,7 +8,7 @@ from ..models.audit import AuditLog
 
 async def log_action(
     db: AsyncSession,
-    user_id: uuid.UUID | None,
+    user_id: str | None,
     action: str,
     resource: str,
     resource_id: str | None = None,

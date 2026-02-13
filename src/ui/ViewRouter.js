@@ -131,6 +131,7 @@ export function switchView(view) {
     document.getElementById('soap-records-view').style.display = 'none';
     document.getElementById('exercise-view').style.display = 'none';
     document.getElementById('reports-view').style.display = 'none';
+    document.getElementById('therapy-centers-view').style.display = 'none';
 
     mappingEditorActive = false;
 
@@ -167,6 +168,10 @@ export function switchView(view) {
         case 'reports':
             document.getElementById('reports-view').style.display = 'block';
             refreshReportPanel();
+            break;
+        case 'therapy-centers':
+            document.getElementById('therapy-centers-view').style.display = 'block';
+            if (window._activateTherapyCentersView) window._activateTherapyCentersView();
             break;
         case 'mapping':
             document.getElementById('viewer-container').style.display = 'block';

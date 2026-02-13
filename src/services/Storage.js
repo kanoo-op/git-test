@@ -452,6 +452,23 @@ export function clearMappingData() {
     saveData(data);
 }
 
+// --- Naver API Settings (localStorage) ---
+
+const NAVER_API_KEY = 'pv_naver_api';
+
+export function getNaverApiSettings() {
+    try {
+        const stored = localStorage.getItem(NAVER_API_KEY);
+        return stored ? JSON.parse(stored) : null;
+    } catch {
+        return null;
+    }
+}
+
+export function setNaverApiSettings(clientId, clientSecret = '') {
+    localStorage.setItem(NAVER_API_KEY, JSON.stringify({ clientId, clientSecret }));
+}
+
 // --- Posture Photos (IndexedDB primary, localStorage fallback) ---
 
 const PHOTO_PREFIX = 'pv_photo_';

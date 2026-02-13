@@ -32,6 +32,11 @@ let modelCenterZ = 0;
 // Live region highlight state
 let liveHighlightedMeshes = new Set();
 
+// Frame smoothing (rolling average of landmark positions)
+const SMOOTH_WINDOW = 20;
+let landmarkBuffer = [];    // circular buffer of recent normalized landmarks
+let worldLandmarkBuffer = []; // circular buffer of recent world landmarks
+
 // SEV colors for skeleton joints
 const JOINT_COLOR = 0x00ff88;
 const LINE_COLOR = 0x00ccaa;
@@ -139,6 +144,33 @@ export function createSkeletonGroup() {
 }
 
 /**
+ * 프레임 평균화: 최근 N프레임의 랜드마크 좌표를 평균하여 노이즈 감소
+ */
+function smoothLandmarks(rawLandmarks, buffer) {
+    buffer.push(rawLandmarks.map(lm => ({ x: lm.x, y: lm.y, z: lm.z, visibility: lm.visibility })));
+    if (buffer.length > SMOOTH_WINDOW) buffer.shift();
+
+    if (buffer.length < 2) return rawLandmarks;
+
+    const count = buffer.length;
+    return rawLandmarks.map((lm, i) => {
+        let sx = 0, sy = 0, sz = 0, sv = 0;
+        for (const frame of buffer) {
+            sx += frame[i].x;
+            sy += frame[i].y;
+            sz += frame[i].z;
+            sv += frame[i].visibility || 0;
+        }
+        return {
+            x: sx / count,
+            y: sy / count,
+            z: sz / count,
+            visibility: sv / count,
+        };
+    });
+}
+
+/**
  * MediaPipe world 좌표 → Three.js 모델 좌표 변환
  * MediaPipe: 미터 단위, hip 중심, Y-down
  * Three.js: Y-up, feet 기준
@@ -216,8 +248,14 @@ export function startRealtimePose(videoEl, onUpdate) {
             const result = videoLandmarker.detectForVideo(videoEl, timestamp);
 
             if (result.landmarks && result.landmarks.length > 0) {
-                const landmarks = result.landmarks[0];
-                const worldLandmarks = result.worldLandmarks?.[0] || null;
+                const rawLandmarks = result.landmarks[0];
+                const rawWorldLandmarks = result.worldLandmarks?.[0] || null;
+
+                // 프레임 평균화로 노이즈 감소
+                const landmarks = smoothLandmarks(rawLandmarks, landmarkBuffer);
+                const worldLandmarks = rawWorldLandmarks
+                    ? smoothLandmarks(rawWorldLandmarks, worldLandmarkBuffer)
+                    : null;
 
                 // Calculate confidence
                 const keyIndices = [
@@ -236,7 +274,7 @@ export function startRealtimePose(videoEl, onUpdate) {
                 }
                 const confidence = visCount > 0 ? Math.round((totalVis / visCount) * 100) / 100 : 0;
 
-                // Calculate metrics
+                // Calculate metrics (smoothed landmarks → stable results)
                 const metrics = calculatePostureMetrics(landmarks, worldLandmarks, videoEl);
                 const regionMapping = mapMetricsToRegions(metrics);
 
@@ -278,6 +316,10 @@ export function stopRealtimePose() {
         cancelAnimationFrame(animFrameId);
         animFrameId = null;
     }
+
+    // Clear smoothing buffers
+    landmarkBuffer.length = 0;
+    worldLandmarkBuffer.length = 0;
 
     // Hide skeleton
     if (skeletonGroup) {

@@ -1,7 +1,7 @@
 // DevSettings.js - 개발자 설정 모듈 (매핑 UI 등 개발용 기능)
 
 import { loadMapping, clearMapping, getMappingInfo } from '../anatomy/Regions.js';
-import { saveMapping, getMapping, clearMappingData } from '../services/Storage.js';
+import { saveMapping, getMapping, clearMappingData, getNaverApiSettings, setNaverApiSettings } from '../services/Storage.js';
 
 /**
  * 개발자 설정 초기화
@@ -25,6 +25,7 @@ export function initDevSettings() {
 
     // Init mapping UI within dev settings
     initDevMappingUI();
+    initNaverApiSettings();
 }
 
 /**
@@ -144,5 +145,48 @@ export function renderDevMappingStatus() {
                 <span class="mesh-count">${r.meshCount}</span>
             </div>
         `).join('');
+    }
+}
+
+// ======== Naver API Settings ========
+
+function initNaverApiSettings() {
+    const clientIdInput = document.getElementById('naver-client-id-input');
+    const clientSecretInput = document.getElementById('naver-client-secret-input');
+    const saveBtn = document.getElementById('btn-save-naver-api');
+
+    const settings = getNaverApiSettings();
+    if (settings) {
+        if (clientIdInput) clientIdInput.value = settings.clientId || '';
+        if (clientSecretInput) clientSecretInput.value = settings.clientSecret || '';
+    }
+    updateNaverApiStatus();
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const clientId = (clientIdInput?.value || '').trim();
+            if (!clientId) {
+                window.showToast?.('Client ID를 입력하세요.', 'warning');
+                return;
+            }
+            setNaverApiSettings(clientId, (clientSecretInput?.value || '').trim());
+            updateNaverApiStatus();
+            window.showToast?.('네이버 API 설정이 저장되었습니다.', 'success');
+        });
+    }
+}
+
+function updateNaverApiStatus() {
+    const statusEl = document.getElementById('naver-api-status');
+    const statusText = document.getElementById('naver-api-status-text');
+    if (!statusEl || !statusText) return;
+
+    const settings = getNaverApiSettings();
+    if (settings && settings.clientId) {
+        statusEl.style.color = 'var(--status-normal)';
+        statusText.textContent = '설정됨';
+    } else {
+        statusEl.style.color = 'var(--text-tertiary)';
+        statusText.textContent = '미설정';
     }
 }

@@ -26,3 +26,22 @@ export function escapeHtml(str) {
 export function severityRank(sev) {
     return { normal: 0, mild: 1, moderate: 2, severe: 3 }[sev] || 0;
 }
+
+// Body region sort order (head → foot)
+const REGION_SORT_KEYS = ['머리', '목', '어깨', '가슴', '상부 등', '허리', '복부', '팔', '골반', '대퇴', '종아리', '발'];
+
+export function regionSortIndex(regionName) {
+    const name = String(regionName || '');
+    for (let i = 0; i < REGION_SORT_KEYS.length; i++) {
+        if (name.includes(REGION_SORT_KEYS[i])) return i;
+    }
+    return REGION_SORT_KEYS.length;
+}
+
+// PDF-specific severity colors (RGB arrays for jsPDF setTextColor)
+export const SEV_PDF_COLORS = {
+    normal:   [76, 175, 80],     // green
+    mild:     [33, 150, 243],    // blue
+    moderate: [255, 152, 0],     // orange
+    severe:   [244, 67, 54],     // red
+};

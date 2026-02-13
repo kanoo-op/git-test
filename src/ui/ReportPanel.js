@@ -1,7 +1,7 @@
 // ReportPanel.js - Report generation view
 
 import * as storage from '../services/Storage.js';
-import { SEV_LABELS, SEV_COLORS, GENDER_LABELS, PROGRESS_LABELS, calculateAge, severityRank, escapeHtml } from '../utils/helpers.js';
+import { SEV_LABELS, SEV_COLORS, GENDER_LABELS, PROGRESS_LABELS, calculateAge, severityRank, regionSortIndex, escapeHtml } from '../utils/helpers.js';
 import { exportAssessmentPDF, exportProgressPDF, exportReferralPDF } from '../patients/PdfExport.js';
 
 let currentReportType = null;
@@ -164,8 +164,9 @@ function renderAssessmentPreview(patient, assessment) {
     const selections = assessment.selections || [];
     const uniqueSelections = new Map();
     for (const s of selections) {
-        if (!uniqueSelections.has(s.meshId) || severityRank(s.severity) > severityRank(uniqueSelections.get(s.meshId).severity)) {
-            uniqueSelections.set(s.meshId, s);
+        const key = s.region || s.regionKey || s.meshId;
+        if (!uniqueSelections.has(key) || severityRank(s.severity) > severityRank(uniqueSelections.get(key).severity)) {
+            uniqueSelections.set(key, s);
         }
     }
 
@@ -197,12 +198,15 @@ function renderAssessmentPreview(patient, assessment) {
         html += `</div>`;
     }
 
-    // Severity table
+    // Severity table (sorted by body region order)
     if (uniqueSelections.size > 0) {
+        const sortedSelections = [...uniqueSelections.values()].sort(
+            (a, b) => regionSortIndex(a.region || a.meshId) - regionSortIndex(b.region || b.meshId)
+        );
         html += `<table class="rpt-table">
             <thead><tr><th>부위</th><th>조직</th><th>심각도</th><th>메모</th></tr></thead>
             <tbody>`;
-        for (const [, s] of uniqueSelections) {
+        for (const s of sortedSelections) {
             html += `<tr>
                 <td>${escapeHtml(s.region || s.meshId || '-')}</td>
                 <td>${escapeHtml(s.tissue || '-')}</td>
@@ -335,10 +339,13 @@ function buildSeverityMap(assessment) {
 }
 
 function renderSeverityComparisonTable(firstMap, lastMap, allRegions) {
+    const sortedRegions = [...allRegions].sort(
+        (a, b) => regionSortIndex(a) - regionSortIndex(b)
+    );
     let html = `<table class="rpt-table rpt-compare-table">
         <thead><tr><th>부위</th><th>첫 평가</th><th>최근 평가</th><th>변화</th></tr></thead>
         <tbody>`;
-    for (const region of allRegions) {
+    for (const region of sortedRegions) {
         const firstSev = firstMap.get(region) || 'normal';
         const lastSev = lastMap.get(region) || 'normal';
         const firstRank = severityRank(firstSev);

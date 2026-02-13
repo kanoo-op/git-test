@@ -11,8 +11,8 @@ _INSECURE_ENCRYPTION_KEY = "change-me-generate-with-python-c-from-cryptography-f
 
 
 class Settings(BaseSettings):
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postureview:postureview@db:5432/postureview"
+    # Database (SQLite for local dev, PostgreSQL for production)
+    DATABASE_URL: str = "sqlite+aiosqlite:///./postureview.db"
 
     # JWT
     SECRET_KEY: str = _INSECURE_SECRET_KEY
@@ -37,6 +37,10 @@ class Settings(BaseSettings):
 
     # Photo
     MAX_PHOTO_SIZE: int = 10 * 1024 * 1024  # 10MB
+
+    # Naver API
+    NAVER_CLIENT_ID: str = ""
+    NAVER_CLIENT_SECRET: str = ""
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

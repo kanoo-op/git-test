@@ -10,7 +10,7 @@ from .config import settings
 from .database import engine, async_session, Base
 from .services.auth_service import ensure_admin_exists
 
-from .api import auth, patients, assessments, photos, dashboard, mappings, users, audit, backup
+from .api import auth, patients, assessments, photos, dashboard, mappings, users, audit, backup, naver
 
 
 @asynccontextmanager
@@ -58,6 +58,7 @@ app.include_router(mappings.router)
 app.include_router(users.router)
 app.include_router(audit.router)
 app.include_router(backup.router)
+app.include_router(naver.router)
 
 
 @app.get("/api/health")

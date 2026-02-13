@@ -303,6 +303,8 @@ function renderResults(result) {
         </div>
     `;
 
+    const viewLabel = metrics._viewType === 'lateral' ? '측면' : '정면';
+
     panel.innerHTML = `
         <div class="posture-results-header">
             <h3>분석 결과</h3>
@@ -311,6 +313,7 @@ function renderResults(result) {
             </div>
         </div>
         ${confidenceHtml}
+        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px;">촬영 방향: <strong style="color:var(--text-secondary);">${viewLabel}</strong></div>
         <div class="posture-metrics-section">
             <div class="section-label" style="padding-left:0;">자세 지표</div>
             ${metricsHtml}
@@ -381,7 +384,14 @@ function renderMetricsList(metrics) {
         metrics.upperBackKyphosis,
     ];
 
-    return items.map(item => {
+    // 촬영 방향에 따라 비해당 지표 필터링
+    const filtered = items.filter(item => !item.skipped);
+
+    if (filtered.length === 0) {
+        return '<p class="posture-no-issues">분석 가능한 지표가 없습니다.</p>';
+    }
+
+    return filtered.map(item => {
         const sevColor = SEV_COLORS[item.severity] || SEV_COLORS.normal;
         const displayValue = typeof item.value === 'number'
             ? `${item.value}${item.unit}`

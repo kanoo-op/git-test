@@ -384,3 +384,13 @@ export async function fetchAuditLogs(params = {}) {
     const query = qs.toString();
     return request('GET', `/audit${query ? '?' + query : ''}`);
 }
+
+// --- Naver Local Search ---
+
+export async function searchNearbyPlaces(query, x = null, y = null, radius = 0, display = 15) {
+    let url = `/naver/local-search?query=${encodeURIComponent(query)}&display=${display}`;
+    if (x != null && y != null) {
+        url += `&x=${x}&y=${y}&radius=${radius}`;
+    }
+    return request('GET', url);
+}

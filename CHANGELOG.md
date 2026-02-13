@@ -6,6 +6,29 @@
 
 ---
 
+## [2026-02-13]
+
+### Added
+- 주변 재활병원 검색 기능: 네이버 지도 + Local Search API 기반 (대구과학대 기본 위치)
+- 네이버 API 설정 UI: 개발자 설정에서 Client ID/Secret 입력 및 관리
+- 백엔드 네이버 검색 프록시 API (`/api/naver/local-search`)
+- SOAP 노트 자동채우기: S/A/P 섹션 자동 생성 (통증 위치, VAS, 경과, 임상 소견, 운동 처방)
+- SQLite 지원: 백엔드 로컬 개발 환경 PostgreSQL → SQLite 호환
+
+### Changed
+- 검색 UI 단순화: 검색창 하나로 통합, Enter키 검색 지원
+- 위치 없이도 키워드만으로 검색 가능
+- 사이드바 "주변 재활병원" 메뉴를 하단 다크모드 위로 이동
+
+### Fixed
+- SOAP 자동채우기 HEP 운동 좌/우 부위 중복 제거
+- SOAP 경과 수준 판단 시 이전/현재 모두 이상 없는 경우 edge case 처리
+- SOAP 임상 소견 심각도 순 정렬 및 마침표 추가
+- 네이버 Maps SDK 인증 파라미터 수정 (ncpClientId → ncpKeyId)
+- passlib + bcrypt 5.0 호환성 이슈 해결
+
+---
+
 ## [2026-02-12]
 
 ### Added
