@@ -234,6 +234,15 @@
             <!-- 3D Viewer -->
             <div id="viewer-container" class="viewer-container">
                 <canvas id="three-canvas"></canvas>
+
+                <!-- Hit List Panel (overlapping mesh selection) -->
+                <div id="hit-list-panel" class="hit-list-panel" style="display:none;">
+                    <div class="hit-list-header">
+                        <span>선택 후보</span>
+                        <span class="hit-list-hint">Tab으로 순환</span>
+                    </div>
+                    <div id="hit-list-items" class="hit-list-items"></div>
+                </div>
                 <canvas id="viewport-overlay-canvas" class="viewport-overlay-canvas"></canvas>
 
                 <!-- Floating Controls (tissue + camera) -->

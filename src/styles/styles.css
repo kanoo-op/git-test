@@ -4708,6 +4708,82 @@ input, textarea, select {
 }
 
 /* ========================================
+   Hit List Panel (overlapping mesh selection)
+   ======================================== */
+
+.hit-list-panel {
+    position: absolute;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 8px;
+    min-width: 240px;
+    max-width: 360px;
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+}
+
+.hit-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px 8px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.hit-list-hint {
+    font-weight: 400;
+    font-size: 11px;
+    opacity: 0.6;
+}
+
+.hit-list-items {
+    max-height: 240px;
+    overflow-y: auto;
+    padding-top: 4px;
+}
+
+.hit-list-item {
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 100ms;
+}
+
+.hit-list-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.hit-list-item.active {
+    background: var(--accent-light);
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
+.hit-list-item-idx {
+    font-weight: 700;
+    color: var(--accent-primary);
+    min-width: 16px;
+    text-align: center;
+}
+
+.hit-list-item-region {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    margin-left: auto;
+}
+
+/* ========================================
    Floating Controls (Viewer)
    ======================================== */
 

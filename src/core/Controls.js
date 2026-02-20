@@ -3,9 +3,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { scene, camera, renderer } from './SceneManager.js';
-import { getRegion, getTissueName } from '../anatomy/Regions.js';
-import { setHoverHighlight, clearHoverHighlight } from '../anatomy/Highlights.js';
 import { viewMode, getViewportAtMouse, getViewportCamera, mouseToViewportNDC, registerMainControls } from './MultiView.js';
+import { handleClick as ssClick, handleHover as ssHover, handleRightClick as ssRightClick } from './SelectionService.js';
 
 export let orbitControls;
 
@@ -16,11 +15,6 @@ let canvas;
 // Model center (set from viewer bounds, used for camera presets)
 let modelCenter = new THREE.Vector3();
 
-// Callbacks
-let onMeshClick = null;
-let onMeshHover = null;
-let onMeshRightClick = null;
-
 // Camera animation
 let cameraAnimation = null;
 
@@ -29,9 +23,6 @@ let cameraAnimation = null;
  */
 export function initControls(canvasEl, callbacks = {}) {
     canvas = canvasEl;
-    onMeshClick = callbacks.onMeshClick || null;
-    onMeshHover = callbacks.onMeshHover || null;
-    onMeshRightClick = callbacks.onMeshRightClick || null;
 
     // Set model center if provided
     if (callbacks.modelCenter) {
@@ -106,32 +97,15 @@ function onPointerMove(event) {
     mouse.x = m.x;
     mouse.y = m.y;
 
-    // Raycast for hover
+    // Raycast for hover — pass ALL intersects to SelectionService
     raycaster.setFromCamera(mouse, cam);
     const intersects = raycaster.intersectObjects(scene.children, true);
-    const hit = intersects.find(i => i.object.isMesh && i.object.visible);
 
-    if (hit) {
-        setHoverHighlight(hit.object);
-        canvas.style.cursor = 'pointer';
+    // Cursor hint: check if any visible mesh is hit
+    const hasHit = intersects.some(i => i.object.isMesh && i.object.visible);
+    canvas.style.cursor = hasHit ? 'pointer' : 'default';
 
-        if (onMeshHover) {
-            const region = getRegion(hit.object);
-            const tissue = getTissueName(hit.object.userData.tissueType);
-            onMeshHover(hit.object, {
-                tissue,
-                region: region.regionLabel,
-                side: region.side,
-                source: region.source,
-                x: event.clientX,
-                y: event.clientY
-            });
-        }
-    } else {
-        clearHoverHighlight();
-        canvas.style.cursor = 'default';
-        if (onMeshHover) onMeshHover(null, null);
-    }
+    ssHover(intersects, event);
 }
 
 function onClick(event) {
@@ -141,34 +115,19 @@ function onClick(event) {
     const { mouse: m, cam } = getMouseAndCamera(event);
     raycaster.setFromCamera(m, cam);
     const intersects = raycaster.intersectObjects(scene.children, true);
-    const hit = intersects.find(i => i.object.isMesh && i.object.visible);
 
-    if (hit && onMeshClick) {
-        const region = getRegion(hit.object);
-        const tissue = getTissueName(hit.object.userData.tissueType);
-        onMeshClick(hit.object, {
-            tissue,
-            region: region.regionLabel,
-            side: region.side,
-            source: region.source,
-            meshId: hit.object.name || hit.object.uuid
-        });
-    }
+    // Pass ALL intersects to SelectionService (filtering happens there)
+    ssClick(intersects, event);
 }
 
 function onRightClick(event) {
-    if (!onMeshRightClick) return;
-
     event.preventDefault();
 
     const { mouse: m, cam } = getMouseAndCamera(event);
     raycaster.setFromCamera(m, cam);
     const intersects = raycaster.intersectObjects(scene.children, true);
-    const hit = intersects.find(i => i.object.isMesh && i.object.visible);
 
-    if (hit) {
-        onMeshRightClick(hit.object);
-    }
+    ssRightClick(intersects);
 }
 
 /**

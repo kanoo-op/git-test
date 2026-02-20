@@ -6,13 +6,12 @@ import { initScene, startRenderLoop, captureScreenshot } from './core/SceneManag
 import { loadModel } from './core/ModelLoader.js';
 import { scene, camera } from './core/SceneManager.js';
 import { initControls } from './core/Controls.js';
+import { onHover, initSelectionKeyboard } from './core/SelectionService.js';
 import { initSidebar, initFloatingControls } from './ui/Sidebar.js';
 import { initPanels, switchView } from './ui/ViewRouter.js';
 import { initDevSettings } from './ui/DevSettings.js';
-import { openContextPanel, closeContextPanel } from './ui/ContextPanel.js';
-import { isMappingAssignMode } from './ui/ViewRouter.js';
-import { handleMappingAssign, handleMappingRemove } from './mapping/MappingEditor.js';
-import { selectMesh, deselectCurrentMesh, getSelectedMesh, setRenderMode } from './anatomy/Highlights.js';
+import { closeContextPanel } from './ui/ContextPanel.js';
+import { setRenderMode } from './anatomy/Highlights.js';
 import { exportAllData, clearMappingData, hasPinSet, verifyPin, setPin, removePin } from './services/Storage.js';
 import { initPostureUI } from './pose/PoseUI.js';
 import { initAnatomySearch, showAnatomySearch } from './anatomy/AnatomySearch.js';
@@ -78,11 +77,8 @@ loadModel(
         // Start render loop
         startRenderLoop();
 
-        // Initialize controls
+        // Initialize controls (selection logic lives in SelectionService)
         initControls(canvas, {
-            onMeshClick: handleMeshClick,
-            onMeshHover: handleMeshHover,
-            onMeshRightClick: handleMeshRightClick,
             modelCenter: bounds.center
         });
 
@@ -116,6 +112,11 @@ loadModel(
         initSoapRecordsView();
         initTherapyCenters();
         window._activateTherapyCentersView = activateTherapyCentersView;
+
+        // Selection service: keyboard bindings + hover tooltip listener
+        initSelectionKeyboard();
+        onHover(({ mesh, info }) => handleMeshHover(mesh, info));
+
         initViewModeToggle();
         initRenderModeToggle();
         initMobileMenu();
@@ -142,33 +143,6 @@ loadModel(
 );
 
 // --- Event Handlers ---
-
-function handleMeshClick(mesh, info) {
-    if (!mesh) return;
-
-    if (isMappingAssignMode()) {
-        handleMappingAssign(mesh);
-        return;
-    }
-
-    const currentSel = getSelectedMesh();
-
-    if (currentSel === mesh) {
-        deselectCurrentMesh();
-        closeContextPanel();
-        return;
-    }
-
-    deselectCurrentMesh();
-    selectMesh(mesh);
-    openContextPanel(mesh, info);
-}
-
-function handleMeshRightClick(mesh) {
-    if (isMappingAssignMode()) {
-        handleMappingRemove(mesh);
-    }
-}
 
 function handleMeshHover(mesh, info) {
     if (mesh && info) {
