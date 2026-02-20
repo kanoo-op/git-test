@@ -2,7 +2,7 @@
 
 import * as storage from '../services/Storage.js';
 import { resetRegionColors, stopPulseHighlight } from '../anatomy/Highlights.js';
-import { updatePatientCard, renderMappingStatus } from './Sidebar.js';
+import { updatePatientCard, renderMappingStatus, expandGroupForView } from './Sidebar.js';
 import { renderDashboard, setOpenPatientDetail } from './Dashboard.js';
 import { closeContextPanel } from './ContextPanel.js';
 import { renderPatientsList, showNewPatientForm, showEditPatientForm, hidePatientForm, savePatient, openPatientDetail } from '../patients/PatientList.js';
@@ -19,10 +19,10 @@ import { stopRealtimePose, isRealtimeRunning } from '../pose/RealtimePose.js';
 // ======== Shared State ========
 
 let currentView = 'dashboard';
-let assessmentMode = false;
-let currentAssessment = null;
+let sessionMode = false;
+let currentVisit = null;
 let selectedMesh = null;
-let loadedAssessmentId = null;
+let loadedVisitId = null;
 let editingPatientId = null;
 let currentDetailPatientId = null;
 let compareSelections = new Set();
@@ -35,14 +35,14 @@ let selectedRegionKey = null;
 // --- State getters/setters ---
 
 export function getCurrentView() { return currentView; }
-export function isAssessmentMode() { return assessmentMode; }
-export function setAssessmentMode(val) { assessmentMode = val; }
-export function getCurrentAssessment() { return currentAssessment; }
-export function setCurrentAssessment(val) { currentAssessment = val; }
+export function isSessionMode() { return sessionMode; }
+export function setSessionMode(val) { sessionMode = val; }
+export function getCurrentVisit() { return currentVisit; }
+export function setCurrentVisit(val) { currentVisit = val; }
 export function getSelectedMesh() { return selectedMesh; }
 export function setSelectedMesh(val) { selectedMesh = val; }
-export function getLoadedAssessmentId() { return loadedAssessmentId; }
-export function setLoadedAssessmentId(val) { loadedAssessmentId = val; }
+export function getLoadedVisitId() { return loadedVisitId; }
+export function setLoadedVisitId(val) { loadedVisitId = val; }
 export function getEditingPatientId() { return editingPatientId; }
 export function setEditingPatientId(val) { editingPatientId = val; }
 export function getCurrentDetailPatientId() { return currentDetailPatientId; }
@@ -55,33 +55,43 @@ export function setAssignMode(val) { assignMode = val; }
 export function getSelectedRegionKey() { return selectedRegionKey; }
 export function setSelectedRegionKey(val) { selectedRegionKey = val; }
 
-/**
- * 현재 활성 평가 정보 반환 (posture-ui 등 외부에서 사용)
- */
-export function getCurrentAssessmentInfo() {
-    if (!currentAssessment) return null;
-    return { id: currentAssessment.id, assessmentMode };
-}
+// Backward compatibility aliases
+export { isSessionMode as isAssessmentMode };
+export { setSessionMode as setAssessmentMode };
+export { getCurrentVisit as getCurrentAssessment };
+export { setCurrentVisit as setCurrentAssessment };
+export { getLoadedVisitId as getLoadedAssessmentId };
+export { setLoadedVisitId as setLoadedAssessmentId };
 
 /**
- * 외부에서 새 평가를 생성하고 평가 모드 진입 (자세 분석 등에서 사용)
+ * 현재 활성 세션 정보 반환 (posture-ui 등 외부에서 사용)
  */
-export function ensureAssessmentMode() {
+export function getCurrentVisitInfo() {
+    if (!currentVisit) return null;
+    return { id: currentVisit.id, sessionMode };
+}
+export { getCurrentVisitInfo as getCurrentAssessmentInfo };
+
+/**
+ * 외부에서 새 세션을 생성하고 세션 모드 진입 (자세 분석 등에서 사용)
+ */
+export function ensureSessionMode() {
     const patient = storage.getCurrentPatient();
     if (!patient) return null;
 
-    if (assessmentMode && currentAssessment) return currentAssessment;
+    if (sessionMode && currentVisit) return currentVisit;
 
-    currentAssessment = storage.createAssessment(patient.id);
-    assessmentMode = true;
-    loadedAssessmentId = currentAssessment.id;
+    currentVisit = storage.createVisit(patient.id);
+    sessionMode = true;
+    loadedVisitId = currentVisit.id;
 
     setAllRegionsDefaultSeverity(patient);
 
     document.getElementById('assessment-banner').style.display = 'flex';
 
-    return currentAssessment;
+    return currentVisit;
 }
+export { ensureSessionMode as ensureAssessmentMode };
 
 /**
  * 자세분석 뷰의 환자 정보 바 업데이트
@@ -105,20 +115,42 @@ function updatePosturePatientBar() {
 
 // ======== View Switching ========
 
-export function switchView(view) {
-    currentView = view;
+// Alias map: new nav items that map to existing views
+const VIEW_ALIASES = {
+    'new-session': 'dashboard',
+    'session-timeline': 'dashboard',
+};
 
-    if (view !== 'mapping' && assignMode) stopAssignMode();
-    if (view !== 'viewer') {
+// Map views without their own nav-item to a parent nav-item for highlighting
+const VIEW_PARENT_MAP = {
+    'patient-detail': 'patients',
+};
+
+export function switchView(view) {
+    const resolvedView = VIEW_ALIASES[view] || view;
+    currentView = resolvedView;
+
+    if (resolvedView !== 'mapping' && assignMode) stopAssignMode();
+    if (resolvedView !== 'viewer') {
         stopPulseHighlight();
         hideExerciseRecommendations();
         if (isRealtimeRunning()) stopRealtimePose();
     }
 
-    // Update sidebar nav active state
+    // Update sidebar nav active state (use original view for highlighting)
+    const highlightView = VIEW_PARENT_MAP[view] || view;
     document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.view === view);
+        btn.classList.toggle('active', btn.dataset.view === highlightView);
     });
+
+    // Update nav group active state
+    document.querySelectorAll('.nav-group').forEach(group => {
+        const hasActiveChild = group.querySelector('.nav-item.active') !== null;
+        group.classList.toggle('has-active', hasActiveChild);
+    });
+
+    // Auto-expand the group containing the active view
+    expandGroupForView(highlightView);
 
     // Hide all views
     document.getElementById('viewer-container').style.display = 'none';
@@ -135,7 +167,7 @@ export function switchView(view) {
 
     mappingEditorActive = false;
 
-    switch (view) {
+    switch (resolvedView) {
         case 'dashboard':
             document.getElementById('dashboard-view').style.display = 'block';
             renderDashboard();

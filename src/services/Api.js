@@ -235,7 +235,7 @@ export async function exportPatient(id) {
     return request('GET', `/patients/${id}/export`);
 }
 
-// --- Assessments API ---
+// --- Assessments (Visits) API ---
 
 export async function fetchAssessments(patientId) {
     return request('GET', `/patients/${patientId}/assessments`);
@@ -394,3 +394,10 @@ export async function searchNearbyPlaces(query, x = null, y = null, radius = 0, 
     }
     return request('GET', url);
 }
+
+// Forward aliases (new naming convention - backend routes unchanged)
+export { fetchAssessments as fetchVisits };
+export { fetchAssessment as fetchVisit };
+export { createAssessment as createVisit };
+export { updateAssessment as updateVisit };
+export { deleteAssessment as deleteVisit };

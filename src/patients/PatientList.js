@@ -52,7 +52,7 @@ export function renderPatientsList() {
             <div class="patient-card-item" data-patient-id="${p.id}">
                 <div>
                     <div class="name">${escapeHtml(p.name)}</div>
-                    <div class="meta">나이: ${age} | 평가: ${p.assessments?.length || 0}건${p.diagnosis ? ' | ' + escapeHtml(p.diagnosis) : ''}</div>
+                    <div class="meta">나이: ${age} | 내원: ${p.visits?.length || 0}건${p.diagnosis ? ' | ' + escapeHtml(p.diagnosis) : ''}</div>
                 </div>
                 <div class="actions">
                     <button class="delete delete-patient" data-id="${p.id}">삭제</button>

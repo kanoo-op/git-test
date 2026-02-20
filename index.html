@@ -98,39 +98,92 @@
             </div>
 
             <nav class="sidebar-nav">
-                <div class="section-label">메뉴</div>
-                <button class="nav-item active" data-view="dashboard">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                    <span>대시보드</span>
-                </button>
-                <button class="nav-item" data-view="patients">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    <span>환자 관리</span>
-                </button>
-                <button class="nav-item" data-view="posture">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 100 6 3 3 0 000-6z"/><path d="M12 8v8"/><path d="M9 22l3-6 3 6"/><path d="M6 13l6-1 6 1"/></svg>
-                    <span>자세 분석</span>
-                </button>
-                <button class="nav-item" data-view="viewer">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    <span>3D 뷰어</span>
-                </button>
-                <button class="nav-item" data-view="soap-records">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                    <span>치료 기록</span>
-                </button>
-                <button class="nav-item" data-view="exercise">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M6 8H5a4 4 0 000 8h1"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>
-                    <span>운동 처방</span>
-                </button>
-                <button class="nav-item" data-view="reports">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
-                    <span>리포트</span>
-                </button>
-                <button class="nav-item" data-view="disease-search">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <span>질환 검색</span>
-                </button>
+                <!-- Group 1: 내원/세션 -->
+                <div class="nav-group" data-group="visit">
+                    <button class="nav-group-header" aria-expanded="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span>내원/세션</span>
+                        <svg class="nav-group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="nav-group-items">
+                        <button class="nav-item" data-view="new-session"><span>새 세션 시작</span></button>
+                        <button class="nav-item active" data-view="session-timeline"><span>세션 타임라인</span></button>
+                    </div>
+                </div>
+
+                <!-- Group 2: 환자 -->
+                <div class="nav-group" data-group="patients">
+                    <button class="nav-group-header" aria-expanded="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span>환자</span>
+                        <svg class="nav-group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="nav-group-items">
+                        <button class="nav-item" data-view="patients"><span>환자 목록</span></button>
+                    </div>
+                </div>
+
+                <!-- Group 3: 평가 -->
+                <div class="nav-group" data-group="assessment">
+                    <button class="nav-group-header" aria-expanded="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 100 6 3 3 0 000-6z"/><path d="M12 8v8"/><path d="M9 22l3-6 3 6"/><path d="M6 13l6-1 6 1"/></svg>
+                        <span>평가</span>
+                        <svg class="nav-group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="nav-group-items">
+                        <button class="nav-item" data-view="posture"><span>자세분석</span></button>
+                        <button class="nav-item" data-view="viewer"><span>3D 해부 뷰어</span></button>
+                    </div>
+                </div>
+
+                <!-- Group 4: 치료기록 -->
+                <div class="nav-group" data-group="soap">
+                    <button class="nav-group-header" aria-expanded="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        <span>치료기록</span>
+                        <svg class="nav-group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="nav-group-items">
+                        <button class="nav-item" data-view="soap-records"><span>SOAP 기록</span></button>
+                    </div>
+                </div>
+
+                <!-- Group 5: 운동처방 -->
+                <div class="nav-group" data-group="exercise">
+                    <button class="nav-group-header" aria-expanded="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M6 8H5a4 4 0 000 8h1"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+                        <span>운동처방</span>
+                        <svg class="nav-group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="nav-group-items">
+                        <button class="nav-item" data-view="exercise"><span>운동 라이브러리</span></button>
+                    </div>
+                </div>
+
+                <!-- Group 6: 리포트/출력 -->
+                <div class="nav-group" data-group="reports">
+                    <button class="nav-group-header" aria-expanded="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
+                        <span>리포트/출력</span>
+                        <svg class="nav-group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="nav-group-items">
+                        <button class="nav-item" data-view="reports"><span>리포트</span></button>
+                    </div>
+                </div>
+
+                <!-- Group 7: 레퍼런스 -->
+                <div class="nav-group" data-group="reference">
+                    <button class="nav-group-header" aria-expanded="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <span>레퍼런스</span>
+                        <svg class="nav-group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="nav-group-items">
+                        <button class="nav-item" data-view="disease-search"><span>질환/해부 검색</span></button>
+                        <button class="nav-item" data-view="therapy-centers"><span>주변 재활병원</span></button>
+                    </div>
+                </div>
             </nav>
 
             <!-- Patient Card -->
@@ -156,10 +209,6 @@
             </div>
 
             <div class="sidebar-footer">
-                <button class="nav-item footer-nav-item" data-view="therapy-centers">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    <span>주변 재활병원</span>
-                </button>
                 <button id="btn-theme-toggle" class="theme-toggle-btn" title="테마 전환">
                     <span class="theme-icon-dark">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
@@ -332,9 +381,9 @@
 
                 <!-- Assessment Mode Banner -->
                 <div id="assessment-banner" class="assessment-banner" style="display:none;">
-                    <span>평가 모드 - 부위를 선택하거나 근육을 직접 클릭하세요</span>
+                    <span>세션 모드 - 부위를 선택하거나 근육을 직접 클릭하세요</span>
                     <button id="btn-toggle-region-panel" class="btn-sm" style="margin-right:4px;">부위 목록</button>
-                    <button id="btn-end-assessment" class="btn-sm">평가 종료</button>
+                    <button id="btn-end-assessment" class="btn-sm">세션 완료</button>
                 </div>
                 <!-- Region Assessment Panel -->
                 <div id="region-assessment-panel" class="region-assessment-panel" style="display:none;">
@@ -396,11 +445,11 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="stat-total-assessments">0</div>
-                        <div class="stat-label">전체 평가</div>
+                        <div class="stat-label">전체 내원</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="stat-today-assessments">0</div>
-                        <div class="stat-label">오늘 평가</div>
+                        <div class="stat-label">오늘 내원</div>
                     </div>
                 </div>
                 <div class="dashboard-section">
@@ -412,7 +461,7 @@
                     <div class="recent-patients-list" id="recent-patients-list"></div>
                 </div>
                 <div class="dashboard-section">
-                    <h3 class="dashboard-section-title">최근 평가</h3>
+                    <h3 class="dashboard-section-title">최근 내원</h3>
                     <div class="recent-assessments-list" id="recent-assessments-list"></div>
                 </div>
             </div>
@@ -434,7 +483,7 @@
                             <option value="name-desc">이름 (ㅎ-ㄱ)</option>
                             <option value="date-desc">최근 등록순</option>
                             <option value="date-asc">오래된 순</option>
-                            <option value="assessments-desc">평가 많은 순</option>
+                            <option value="assessments-desc">내원 많은 순</option>
                         </select>
                     </div>
                 </div>
@@ -520,7 +569,7 @@
                 <div class="pd-stats" id="pd-stats"></div>
                 <!-- Trend Chart -->
                 <div id="trend-chart-section" class="trend-chart-section" style="display:none;">
-                    <h3>평가 추이</h3>
+                    <h3>내원 추이</h3>
                     <div class="trend-chart-container">
                         <canvas id="trend-chart"></canvas>
                     </div>
@@ -528,10 +577,10 @@
 
                 <div class="pd-assessments-section">
                     <div class="assessments-header">
-                        <h3>평가 기록</h3>
+                        <h3>내원 기록</h3>
                         <div class="pd-assessment-actions">
                             <button id="btn-compare-assessments" class="btn-secondary btn-sm-pad" style="display:none;">비교</button>
-                            <button id="btn-new-assessment-detail" class="btn-primary btn-sm-pad">+ 새 평가</button>
+                            <button id="btn-new-assessment-detail" class="btn-primary btn-sm-pad">+ 새 세션</button>
                         </div>
                     </div>
                     <div id="pd-assessments-timeline" class="pd-assessments-timeline"></div>
@@ -738,7 +787,7 @@
             <div id="end-assessment-overlay" class="end-assessment-overlay" style="display:none;">
                 <div class="end-assessment-modal soap-modal">
                     <div class="soap-modal-header">
-                        <h3>평가 종료 - SOAP 노트</h3>
+                        <h3>세션 완료 - SOAP 노트</h3>
                         <button type="button" id="soap-autofill-btn" class="soap-autofill-btn" title="빈 필드에 평가 데이터 기반 자동 채우기">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                             자동채우기
@@ -938,7 +987,7 @@
                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
                     </svg>
                     <h3>치료 기록이 없습니다</h3>
-                    <p>환자 평가 종료 시 SOAP 노트가 자동 생성됩니다.<br>이 화면에서 모든 치료 기록을 조회하고 관리할 수 있습니다.</p>
+                    <p>세션 완료 시 SOAP 노트가 자동 생성됩니다.<br>이 화면에서 모든 치료 기록을 조회하고 관리할 수 있습니다.</p>
                 </div>
             </div>
 
@@ -962,6 +1011,7 @@
                         <button class="ex-diff-btn" data-diff="어려움">어려움</button>
                     </div>
                 </div>
+                <div id="ex-lib-tag-filters" class="ex-tag-filters"></div>
                 <div class="exercise-layout">
                     <div class="exercise-sidebar">
                         <div class="exercise-category-title">부위별 카테고리</div>
@@ -1005,7 +1055,7 @@
                             </svg>
                         </div>
                         <h3>경과 리포트</h3>
-                        <p>평가 히스토리 기반 심각도 추이와 치료 경과 비교 분석</p>
+                        <p>내원 히스토리 기반 심각도 추이와 치료 경과 비교 분석</p>
                     </div>
                     <div class="rpt-type-card" data-type="referral">
                         <div class="rpt-type-icon">

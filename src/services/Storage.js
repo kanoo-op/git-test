@@ -1,4 +1,4 @@
-// storage.js - IndexedDB + localStorage persistence for patients & assessments
+// storage.js - IndexedDB + localStorage persistence for patients & visits (sessions)
 // IndexedDB is primary storage; localStorage used as fallback and for migration
 
 const STORAGE_KEY = 'postureview_data';
@@ -179,7 +179,25 @@ function saveData(d) {
     }
 }
 
-let data = loadData();
+// --- Data Migration: assessments → visits ---
+
+function migrateAssessmentsToVisits(d) {
+    if (!d || !d.patients) return d;
+    for (const patient of d.patients) {
+        if (patient.assessments && !patient.visits) {
+            patient.visits = patient.assessments.map((a, i) => ({
+                ...a,
+                visitNumber: i + 1,
+                status: 'completed',
+                exercisePlan: [],
+            }));
+            delete patient.assessments;
+        }
+    }
+    return d;
+}
+
+let data = migrateAssessmentsToVisits(loadData());
 
 // When IndexedDB is ready, try to load from there (may have newer data)
 dbInitPromise.then(async () => {
@@ -190,7 +208,7 @@ dbInitPromise.then(async () => {
             // Use IDB data if it has more patients (likely newer)
             if (idbData.patients.length >= data.patients.length) {
                 delete idbData.key;
-                data = idbData;
+                data = migrateAssessmentsToVisits(idbData);
             }
         }
     } catch {
@@ -231,7 +249,7 @@ export function createPatient(patientData) {
         occupation: patientData.occupation || '',
         notes: patientData.notes || '',
         createdAt: Date.now(),
-        assessments: []
+        visits: []
     };
     data.patients.push(patient);
     saveData(data);
@@ -254,67 +272,77 @@ export function deletePatient(id) {
     saveData(data);
 }
 
-// --- Assessments ---
+// --- Visits (Sessions) ---
 
-export function createAssessment(patientId) {
+export function createVisit(patientId) {
     const patient = getPatient(patientId);
     if (!patient) return null;
-    const assessment = {
+    const visit = {
         id: crypto.randomUUID(),
+        visitNumber: (patient.visits?.length || 0) + 1,
         date: Date.now(),
+        status: 'in-progress',
         selections: [],
         highlightState: [],
         summary: '',
         overallNotes: '',
-        soapNotes: null
+        soapNotes: null,
+        exercisePlan: []
     };
-    patient.assessments.push(assessment);
+    patient.visits.push(visit);
     saveData(data);
-    return assessment;
+    return visit;
 }
 
-export function getAssessment(patientId, assessmentId) {
+export function getVisit(patientId, visitId) {
     const patient = getPatient(patientId);
     if (!patient) return null;
-    return patient.assessments.find(a => a.id === assessmentId) || null;
+    return (patient.visits || []).find(v => v.id === visitId) || null;
 }
 
-export function updateAssessment(patientId, assessmentId, updates) {
-    const assessment = getAssessment(patientId, assessmentId);
-    if (!assessment) return null;
-    Object.assign(assessment, updates);
+export function updateVisit(patientId, visitId, updates) {
+    const visit = getVisit(patientId, visitId);
+    if (!visit) return null;
+    Object.assign(visit, updates);
     saveData(data);
-    return assessment;
+    return visit;
 }
 
-export function addSelectionToAssessment(patientId, assessmentId, selection) {
-    const assessment = getAssessment(patientId, assessmentId);
-    if (!assessment) return null;
-    const idx = assessment.selections.findIndex(s => s.meshId === selection.meshId);
+export function addSelectionToVisit(patientId, visitId, selection) {
+    const visit = getVisit(patientId, visitId);
+    if (!visit) return null;
+    const idx = visit.selections.findIndex(s => s.meshId === selection.meshId);
     if (idx >= 0) {
-        assessment.selections[idx] = selection;
+        visit.selections[idx] = selection;
     } else {
-        assessment.selections.push(selection);
+        visit.selections.push(selection);
     }
     saveData(data);
-    return assessment;
+    return visit;
 }
 
-export function deleteAssessment(patientId, assessmentId) {
+export function deleteVisit(patientId, visitId) {
     const patient = getPatient(patientId);
     if (!patient) return;
-    patient.assessments = patient.assessments.filter(a => a.id !== assessmentId);
-    deletePosturePhoto(assessmentId);
+    patient.visits = (patient.visits || []).filter(v => v.id !== visitId);
+    deletePosturePhoto(visitId);
     saveData(data);
 }
 
-export function saveHighlightState(patientId, assessmentId, highlightState) {
-    const assessment = getAssessment(patientId, assessmentId);
-    if (!assessment) return null;
-    assessment.highlightState = highlightState;
+export function saveHighlightState(patientId, visitId, highlightState) {
+    const visit = getVisit(patientId, visitId);
+    if (!visit) return null;
+    visit.highlightState = highlightState;
     saveData(data);
-    return assessment;
+    return visit;
 }
+
+// Backward compatibility aliases
+export { createVisit as createAssessment };
+export { getVisit as getAssessment };
+export { updateVisit as updateAssessment };
+export { addSelectionToVisit as addSelectionToAssessment };
+export { deleteVisit as deleteAssessment };
 
 // --- Search & Sort ---
 
@@ -336,7 +364,7 @@ export function sortPatients(patients, sortBy = 'name', ascending = true) {
                 cmp = a.createdAt - b.createdAt;
                 break;
             case 'assessments':
-                cmp = (a.assessments?.length || 0) - (b.assessments?.length || 0);
+                cmp = (a.visits?.length || 0) - (b.visits?.length || 0);
                 break;
         }
         return ascending ? cmp : -cmp;
@@ -352,20 +380,20 @@ export function getDashboardStats() {
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const todayEnd = todayStart + 86400000;
 
-    let totalAssessments = 0;
-    let todayAssessments = 0;
+    let totalVisits = 0;
+    let todayVisits = 0;
     const severityCounts = { normal: 0, mild: 0, moderate: 0, severe: 0 };
     const sevenDaysAgo = Date.now() - 7 * 86400000;
-    let recentAssessments = [];
+    let recentVisits = [];
 
     for (const p of patients) {
-        for (const a of (p.assessments || [])) {
-            totalAssessments++;
-            if (a.date >= todayStart && a.date < todayEnd) todayAssessments++;
-            if (a.date >= sevenDaysAgo) {
-                recentAssessments.push({ ...a, patientName: p.name, patientId: p.id });
+        for (const v of (p.visits || [])) {
+            totalVisits++;
+            if (v.date >= todayStart && v.date < todayEnd) todayVisits++;
+            if (v.date >= sevenDaysAgo) {
+                recentVisits.push({ ...v, patientName: p.name, patientId: p.id });
             }
-            for (const s of (a.selections || [])) {
+            for (const s of (v.selections || [])) {
                 if (s.severity && severityCounts.hasOwnProperty(s.severity)) {
                     severityCounts[s.severity]++;
                 }
@@ -373,31 +401,31 @@ export function getDashboardStats() {
         }
     }
 
-    recentAssessments.sort((a, b) => b.date - a.date);
+    recentVisits.sort((a, b) => b.date - a.date);
 
     const recentPatients = [...patients]
-        .filter(p => p.assessments && p.assessments.length > 0)
+        .filter(p => p.visits && p.visits.length > 0)
         .sort((a, b) => {
-            const lastA = Math.max(...a.assessments.map(x => x.date));
-            const lastB = Math.max(...b.assessments.map(x => x.date));
+            const lastA = Math.max(...a.visits.map(x => x.date));
+            const lastB = Math.max(...b.visits.map(x => x.date));
             return lastB - lastA;
         })
         .slice(0, 5);
 
     return {
         totalPatients: patients.length,
-        totalAssessments,
-        todayAssessments,
-        recentAssessments: recentAssessments.slice(0, 10),
+        totalVisits,
+        todayVisits,
+        recentVisits: recentVisits.slice(0, 10),
         recentPatients,
         severityCounts
     };
 }
 
-// --- Assessment Summary ---
+// --- Visit Summary ---
 
-export function generateAssessmentSummary(assessment) {
-    const selections = assessment.selections || [];
+export function generateVisitSummary(visit) {
+    const selections = visit.selections || [];
     const counts = { normal: 0, mild: 0, moderate: 0, severe: 0 };
     const concerns = [];
 
@@ -420,6 +448,8 @@ export function generateAssessmentSummary(assessment) {
     }
     return summary;
 }
+
+export { generateVisitSummary as generateAssessmentSummary };
 
 // --- Per-Patient Export ---
 
@@ -576,9 +606,9 @@ export function exportAllData() {
 
 export function importData(jsonString) {
     try {
-        const imported = JSON.parse(jsonString);
+        let imported = JSON.parse(jsonString);
         if (imported.patients && Array.isArray(imported.patients)) {
-            data = imported;
+            data = migrateAssessmentsToVisits(imported);
             saveData(data);
             return true;
         }

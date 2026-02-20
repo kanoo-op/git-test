@@ -20,6 +20,9 @@ export function initSidebar(callbacks = {}) {
         });
     });
 
+    // Nav group collapse/expand
+    initNavGroups();
+
     // Export button
     const exportBtn = document.getElementById('btn-export');
     if (exportBtn && callbacks.onExport) {
@@ -28,6 +31,62 @@ export function initSidebar(callbacks = {}) {
 
     // Auto-load mapping (no sidebar UI, just background load)
     loadDefaultMapping();
+}
+
+// ===== Nav Group Collapse/Expand =====
+
+const NAV_COLLAPSED_KEY = 'postureview_nav_collapsed';
+
+function initNavGroups() {
+    const collapsed = getCollapsedGroups();
+
+    document.querySelectorAll('.nav-group').forEach(group => {
+        const groupKey = group.dataset.group;
+        const header = group.querySelector('.nav-group-header');
+
+        if (collapsed.includes(groupKey)) {
+            group.classList.add('collapsed');
+            header.setAttribute('aria-expanded', 'false');
+        }
+
+        header.addEventListener('click', () => {
+            const isCollapsed = group.classList.toggle('collapsed');
+            header.setAttribute('aria-expanded', String(!isCollapsed));
+            saveCollapsedGroups();
+        });
+    });
+}
+
+function getCollapsedGroups() {
+    try {
+        return JSON.parse(localStorage.getItem(NAV_COLLAPSED_KEY)) || [];
+    } catch {
+        return [];
+    }
+}
+
+function saveCollapsedGroups() {
+    const collapsed = [];
+    document.querySelectorAll('.nav-group.collapsed').forEach(g => {
+        collapsed.push(g.dataset.group);
+    });
+    localStorage.setItem(NAV_COLLAPSED_KEY, JSON.stringify(collapsed));
+}
+
+/**
+ * Ensure the nav group containing a specific view is expanded
+ */
+export function expandGroupForView(view) {
+    const navItem = document.querySelector(`.nav-item[data-view="${view}"]`);
+    if (!navItem) return;
+
+    const group = navItem.closest('.nav-group');
+    if (group && group.classList.contains('collapsed')) {
+        group.classList.remove('collapsed');
+        const header = group.querySelector('.nav-group-header');
+        if (header) header.setAttribute('aria-expanded', 'true');
+        saveCollapsedGroups();
+    }
 }
 
 /**
@@ -70,11 +129,11 @@ export function updatePatientCard(patient) {
         card.style.display = 'block';
         nameEl.textContent = patient.name;
         const age = patient.dob ? calculateAge(patient.dob) : '-';
-        const assessCount = patient.assessments ? patient.assessments.length : 0;
+        const assessCount = patient.visits ? patient.visits.length : 0;
         const diagnosis = patient.diagnosis || '';
         metaEl.textContent = diagnosis
-            ? `나이: ${age} | ${diagnosis} | 평가: ${assessCount}건`
-            : `나이: ${age} | 평가: ${assessCount}건`;
+            ? `나이: ${age} | ${diagnosis} | 내원: ${assessCount}건`
+            : `나이: ${age} | 내원: ${assessCount}건`;
     } else {
         card.style.display = 'none';
     }

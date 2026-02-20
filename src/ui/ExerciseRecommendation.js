@@ -1,11 +1,12 @@
 // ExerciseRecommendation.js - 자세분석 결과 기반 추천 운동 패널
 // 3D 뷰어 내부에 중증도별 추천 운동 영상을 표시
 
-import { getAnatomyInfo } from '../anatomy/AnatomyData.js';
+import { getAnatomyInfo, EXERCISE_TAG_DEFS } from '../anatomy/AnatomyData.js';
 
 const SEV_LABELS = { normal: '정상', mild: '경도', moderate: '중등도', severe: '중증' };
 const SEV_ORDER = { severe: 0, moderate: 1, mild: 2, normal: 3 };
 const DIFF_CLASS = { '쉬움': 'easy', '보통': 'medium', '어려움': 'hard' };
+const SEVERITY_PHASE_MAP = { severe: 'acute', moderate: 'subacute', mild: 'chronic' };
 
 /**
  * 자세분석 결과에서 영향 부위의 추천 운동 패널 표시
@@ -42,6 +43,14 @@ export function showExerciseRecommendations(regionMap) {
 
         if (exercises.length === 0) continue;
 
+        // severity→phase 매핑으로 정렬: 해당 phase 운동 우선
+        const targetPhase = SEVERITY_PHASE_MAP[data.severity] || 'chronic';
+        exercises.sort((a, b) => {
+            const aMatch = (a.phase || []).includes(targetPhase) ? 0 : 1;
+            const bMatch = (b.phase || []).includes(targetPhase) ? 0 : 1;
+            return aMatch - bMatch;
+        });
+
         sections.push({
             regionKey,
             name: info.name,
@@ -67,12 +76,23 @@ export function showExerciseRecommendations(regionMap) {
 
     listEl.innerHTML = sections.map(section => {
         const sevClass = section.severity;
-        const exercisesHtml = section.exercises.map(e => `
+        const exercisesHtml = section.exercises.map(e => {
+            // 태그 배지 (purpose만 표시)
+            const tagBadges = (e.purpose || []).map(pid => {
+                const opt = EXERCISE_TAG_DEFS.purpose?.options.find(o => o.id === pid);
+                return opt ? `<span class="rec-tag-badge" style="background:${opt.color}">${esc(opt.label)}</span>` : '';
+            }).join('');
+            const precautionHtml = e.precautions
+                ? `<div class="rec-precaution" title="${esc(e.precautions)}">&#9888; ${esc(e.precautions)}</div>`
+                : '';
+            return `
             <div class="rec-exercise-item" data-exercise="${esc(e.name)}" data-video-id="${e.videoId || ''}" data-difficulty="${esc(e.difficulty)}">
                 <div class="rec-exercise-info">
                     <span class="rec-exercise-name">${esc(e.name)}</span>
                     <span class="rec-exercise-diff difficulty-${DIFF_CLASS[e.difficulty] || 'medium'}">${esc(e.difficulty)}</span>
                 </div>
+                ${tagBadges ? `<div class="rec-exercise-tags">${tagBadges}</div>` : ''}
+                ${precautionHtml}
                 <div class="rec-exercise-actions">
                     <span class="rec-exercise-play" title="영상 보기">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -82,7 +102,7 @@ export function showExerciseRecommendations(regionMap) {
                     </span>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
 
         return `
             <div class="rec-section" data-severity="${sevClass}">

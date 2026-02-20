@@ -14,8 +14,8 @@ export function renderDashboard() {
     const stats = storage.getDashboardStats();
 
     document.getElementById('stat-total-patients').textContent = stats.totalPatients;
-    document.getElementById('stat-total-assessments').textContent = stats.totalAssessments;
-    document.getElementById('stat-today-assessments').textContent = stats.todayAssessments;
+    document.getElementById('stat-total-assessments').textContent = stats.totalVisits;
+    document.getElementById('stat-today-assessments').textContent = stats.todayVisits;
 
     // Severity distribution bars
     const distEl = document.getElementById('severity-distribution');
@@ -37,14 +37,14 @@ export function renderDashboard() {
         rpList.innerHTML = '<div class="empty-state" style="padding:20px;"><p>아직 환자가 없습니다.</p></div>';
     } else {
         rpList.innerHTML = stats.recentPatients.map(p => {
-            const lastDate = p.assessments.length > 0
-                ? new Date(Math.max(...p.assessments.map(a => a.date))).toLocaleDateString('ko-KR')
+            const lastDate = p.visits.length > 0
+                ? new Date(Math.max(...p.visits.map(a => a.date))).toLocaleDateString('ko-KR')
                 : '-';
             return `
                 <div class="recent-patient-card" data-patient-id="${p.id}">
                     <div>
                         <div class="recent-card-name">${escapeHtml(p.name)}</div>
-                        <div class="recent-card-meta">평가 ${p.assessments.length}건 | 마지막: ${lastDate}${p.diagnosis ? ' | ' + escapeHtml(p.diagnosis) : ''}</div>
+                        <div class="recent-card-meta">내원 ${p.visits.length}건 | 마지막: ${lastDate}${p.diagnosis ? ' | ' + escapeHtml(p.diagnosis) : ''}</div>
                     </div>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
@@ -60,10 +60,10 @@ export function renderDashboard() {
 
     // Recent assessments
     const raList = document.getElementById('recent-assessments-list');
-    if (stats.recentAssessments.length === 0) {
-        raList.innerHTML = '<div class="empty-state" style="padding:20px;"><p>최근 평가가 없습니다.</p></div>';
+    if (stats.recentVisits.length === 0) {
+        raList.innerHTML = '<div class="empty-state" style="padding:20px;"><p>최근 내원이 없습니다.</p></div>';
     } else {
-        raList.innerHTML = stats.recentAssessments.map(a => {
+        raList.innerHTML = stats.recentVisits.map(a => {
             const date = new Date(a.date).toLocaleDateString('ko-KR', {
                 month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
             });

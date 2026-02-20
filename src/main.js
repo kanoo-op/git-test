@@ -122,7 +122,7 @@ loadModel(
         initThemeToggle();
 
         // Default view: dashboard
-        switchView('dashboard');
+        switchView('session-timeline');
 
         // Remove loading overlay from DOM after animation
         setTimeout(() => {

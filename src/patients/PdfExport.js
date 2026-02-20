@@ -76,7 +76,7 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
         // Header
         doc.setFontSize(16);
         doc.setTextColor(50);
-        doc.text('PostureView 평가 리포트', 14, y);
+        doc.text('PostureView 내원 리포트', 14, y);
         y += 10;
         doc.setFontSize(10);
         doc.setTextColor(100);
@@ -100,7 +100,7 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
         // Assessment info
         doc.setFontSize(11);
         doc.setTextColor(50);
-        doc.text(`평가일: ${new Date(assessment.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, y);
+        doc.text(`내원일: ${new Date(assessment.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, y);
         y += 5;
         if (assessment.summary) {
             doc.text(`요약: ${assessment.summary}`, 14, y);
@@ -266,9 +266,9 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
 export async function exportProgressPDF(patientId) {
     const patient = storage.getPatient(patientId);
     if (!patient) return;
-    const assessments = (patient.assessments || []).slice().sort((a, b) => a.date - b.date);
+    const assessments = (patient.visits || []).slice().sort((a, b) => a.date - b.date);
     if (assessments.length === 0) {
-        window.showToast?.('평가 기록이 없습니다.', 'warning');
+        window.showToast?.('내원 기록이 없습니다.', 'warning');
         return;
     }
 
@@ -314,12 +314,12 @@ export async function exportProgressPDF(patientId) {
 
         doc.setFontSize(11);
         doc.setFont('KoreanFont', 'bold');
-        doc.text('평가 요약', 14, y);
+        doc.text('내원 요약', 14, y);
         y += 6;
         doc.setFontSize(10);
         doc.setFont('KoreanFont', 'normal');
-        doc.text(`평가 기간: ${firstDate} ~ ${lastDate} (${daysBetween}일)`, 14, y); y += 5;
-        doc.text(`총 평가 횟수: ${assessments.length}회`, 14, y); y += 8;
+        doc.text(`내원 기간: ${firstDate} ~ ${lastDate} (${daysBetween}일)`, 14, y); y += 5;
+        doc.text(`총 내원 횟수: ${assessments.length}회`, 14, y); y += 8;
 
         // Severity comparison table
         const firstSevMap = buildSevMap(first);
@@ -335,8 +335,8 @@ export async function exportProgressPDF(patientId) {
             doc.setFont('KoreanFont', 'normal');
             doc.setTextColor(100);
             doc.text('부위', 14, y);
-            doc.text('첫 평가', 80, y);
-            doc.text('최근 평가', 120, y);
+            doc.text('첫 내원', 80, y);
+            doc.text('최근 내원', 120, y);
             doc.text('변화', 165, y);
             y += 5;
             doc.setDrawColor(220);
@@ -473,26 +473,26 @@ export async function exportReferralPDF(patientId, referralData) {
         y += 4;
 
         // Latest assessment summary
-        const assessments = (patient.assessments || []).slice().sort((a, b) => b.date - a.date);
+        const assessments = (patient.visits || []).slice().sort((a, b) => b.date - a.date);
         const latest = assessments[0];
 
         if (latest) {
             doc.setFontSize(12);
             doc.setFont('KoreanFont', 'bold');
             doc.setTextColor(50);
-            doc.text('최근 평가 요약', 14, y);
+            doc.text('최근 내원 요약', 14, y);
             y += 7;
             doc.setFontSize(10);
             doc.setFont('KoreanFont', 'normal');
             doc.setTextColor(60);
-            doc.text(`평가일: ${new Date(latest.date).toLocaleDateString('ko-KR')}`, 14, y); y += 5;
+            doc.text(`내원일: ${new Date(latest.date).toLocaleDateString('ko-KR')}`, 14, y); y += 5;
 
             const sevMap = buildSevMap(latest);
             const counts = { normal: 0, mild: 0, moderate: 0, severe: 0 };
             for (const [, sev] of sevMap) { if (counts[sev] !== undefined) counts[sev]++; }
             const dist = Object.entries(SEV_LABELS).filter(([k]) => counts[k] > 0).map(([k, l]) => `${l} ${counts[k]}`).join(', ');
             if (dist) { doc.text(`심각도 분포: ${dist}`, 14, y); y += 5; }
-            doc.text(`총 평가 횟수: ${assessments.length}회`, 14, y); y += 6;
+            doc.text(`총 내원 횟수: ${assessments.length}회`, 14, y); y += 6;
 
             // SOAP summary
             if (latest.soapNotes) {
@@ -693,3 +693,6 @@ function renderSoapPdfSection(doc, y, pageW, soap) {
 
     return y;
 }
+
+// Forward aliases (new naming convention)
+export { exportAssessmentPDF as exportVisitPDF };

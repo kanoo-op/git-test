@@ -1,10 +1,10 @@
 // PoseUI.js - 자세분석 UI 컨트롤러
-// 환자 연동, 사진 저장, 분석 결과 → 평가 → 3D 모델 적용
+// 환자 연동, 사진 저장, 분석 결과 → 세션 → 3D 모델 적용
 
 import { analyzePosture, initPoseLandmarker } from './PoseDetector.js';
 import { drawLandmarks } from './PoseOverlay.js';
 import { applyRegionSeverity } from '../patients/AssessmentManager.js';
-import { switchView, ensureAssessmentMode } from '../ui/ViewRouter.js';
+import { switchView, ensureSessionMode } from '../ui/ViewRouter.js';
 import { showExerciseRecommendations } from '../ui/ExerciseRecommendation.js';
 import * as storage from '../services/Storage.js';
 
@@ -299,7 +299,7 @@ function renderResults(result) {
                 <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            환자를 선택해야 평가에 적용할 수 있습니다.
+            환자를 선택해야 세션에 적용할 수 있습니다.
         </div>
     `;
 
@@ -326,9 +326,9 @@ function renderResults(result) {
             ${patientWarning}
             <button id="posture-apply-btn" class="btn-primary" style="width:100%;" ${!patient ? 'disabled' : ''}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                평가에 적용 + 사진 저장
+                세션에 적용 + 사진 저장
             </button>
-            <p class="posture-apply-hint">새 평가를 자동 생성하고, 분석 사진과 결과를 저장합니다.</p>
+            <p class="posture-apply-hint">새 세션을 자동 생성하고, 분석 사진과 결과를 저장합니다.</p>
         </div>
     `;
 
@@ -446,10 +446,10 @@ function applyToAssessment() {
         return;
     }
 
-    // 평가 모드 보장 (없으면 새로 생성)
-    const assessment = ensureAssessmentMode();
+    // 세션 모드 보장 (없으면 새로 생성)
+    const assessment = ensureSessionMode();
     if (!assessment) {
-        window.showToast('평가를 생성할 수 없습니다.', 'error');
+        window.showToast('세션을 생성할 수 없습니다.', 'error');
         return;
     }
 

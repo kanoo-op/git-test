@@ -1,7 +1,7 @@
 // ExerciseLibrary.js - 운동 처방 라이브러리
-// AnatomyData의 24개 부위별 운동을 카테고리/난이도/검색으로 탐색
+// AnatomyData의 24개 부위별 운동을 카테고리/난이도/태그/검색으로 탐색
 
-import { getAnatomyInfo } from '../anatomy/AnatomyData.js';
+import { getAnatomyInfo, EXERCISE_TAG_DEFS } from '../anatomy/AnatomyData.js';
 
 // ═══ 카테고리 정의 ═══
 
@@ -33,6 +33,7 @@ const DIFF_ORDER = { '쉬움': 0, '보통': 1, '어려움': 2 };
 let allExercises = [];
 let selectedCategory = 'all';
 let selectedDifficulty = 'all';
+let selectedTags = { purpose: 'all', phase: 'all', equipment: 'all', pattern: 'all' };
 let searchQuery = '';
 
 // ═══ 초기화 ═══
@@ -40,6 +41,7 @@ let searchQuery = '';
 export function initExerciseLibrary() {
     buildDatabase();
     renderCategories();
+    renderTagFilters();
     renderExercises();
     bindEvents();
 }
@@ -64,6 +66,11 @@ function buildDatabase() {
                     regionNames: new Set(),
                     pathologies: new Set(),
                     muscles: new Set(),
+                    purpose: new Set(),
+                    phase: new Set(),
+                    equipment: new Set(),
+                    pattern: new Set(),
+                    precautions: ex.precautions || '',
                 });
             }
             const entry = map.get(key);
@@ -71,6 +78,12 @@ function buildDatabase() {
             entry.regionNames.add(info.name.replace(/\s*\(좌\)|\s*\(우\)/g, '').trim());
             info.commonPathologies.forEach(p => entry.pathologies.add(p));
             info.keyMuscles.slice(0, 3).forEach(m => entry.muscles.add(m));
+            // 태그 합산
+            (ex.purpose || []).forEach(t => entry.purpose.add(t));
+            (ex.phase || []).forEach(t => entry.phase.add(t));
+            (ex.equipment || []).forEach(t => entry.equipment.add(t));
+            (ex.pattern || []).forEach(t => entry.pattern.add(t));
+            if (ex.precautions) entry.precautions = ex.precautions;
         }
     }
 
@@ -80,6 +93,10 @@ function buildDatabase() {
         regionNames: [...e.regionNames],
         pathologies: [...e.pathologies],
         muscles: [...e.muscles],
+        purpose: [...e.purpose],
+        phase: [...e.phase],
+        equipment: [...e.equipment],
+        pattern: [...e.pattern],
     }));
 
     allExercises.sort((a, b) => {
@@ -97,6 +114,12 @@ function getFiltered() {
             if (cat && !cat.regions.some(r => ex.regions.includes(r))) return false;
         }
         if (selectedDifficulty !== 'all' && ex.difficulty !== selectedDifficulty) return false;
+        // 태그 필터
+        for (const dim of ['purpose', 'phase', 'equipment', 'pattern']) {
+            if (selectedTags[dim] !== 'all') {
+                if (!ex[dim].includes(selectedTags[dim])) return false;
+            }
+        }
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             const text = [ex.name, ...ex.regionNames, ...ex.pathologies, ...ex.muscles].join(' ').toLowerCase();
@@ -120,6 +143,39 @@ function renderCategories() {
             ${cat.label}<span class="cat-count">${count}</span>
         </button>`;
     }).join('');
+}
+
+function renderTagFilters() {
+    const container = document.getElementById('ex-lib-tag-filters');
+    if (!container) return;
+
+    let html = '';
+    for (const [dim, def] of Object.entries(EXERCISE_TAG_DEFS)) {
+        html += `<div class="ex-tag-filter-row" data-tag-dim="${dim}">
+            <span class="ex-tag-filter-label">${esc(def.label)}</span>
+            <button class="ex-tag-chip ${selectedTags[dim] === 'all' ? 'active' : ''}" data-tag-dim="${dim}" data-tag-val="all">전체</button>`;
+        for (const opt of def.options) {
+            const isActive = selectedTags[dim] === opt.id;
+            html += `<button class="ex-tag-chip ${isActive ? 'active' : ''}" data-tag-dim="${dim}" data-tag-val="${opt.id}" style="--tag-color:${opt.color}">${esc(opt.label)}</button>`;
+        }
+        html += '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function getTagBadges(ex) {
+    let html = '';
+    // purpose badges
+    for (const pid of ex.purpose) {
+        const opt = EXERCISE_TAG_DEFS.purpose?.options.find(o => o.id === pid);
+        if (opt) html += `<span class="ex-tag-badge" style="background:${opt.color}">${esc(opt.label)}</span>`;
+    }
+    // pattern badges
+    for (const pid of ex.pattern) {
+        const opt = EXERCISE_TAG_DEFS.pattern?.options.find(o => o.id === pid);
+        if (opt) html += `<span class="ex-tag-badge" style="background:${opt.color}">${esc(opt.label)}</span>`;
+    }
+    return html;
 }
 
 function renderExercises() {
@@ -155,15 +211,21 @@ function renderExercises() {
 
     for (const ex of filtered) {
         const dc2 = DIFF_CLASS[ex.difficulty] || 'medium';
+        const tagBadges = getTagBadges(ex);
+        const precautionHtml = ex.precautions
+            ? `<div class="ex-precaution" title="${esc(ex.precautions)}"><span class="ex-precaution-icon">&#9888;</span> ${esc(ex.precautions)}</div>`
+            : '';
         html += `
         <div class="ex-lib-card" data-exercise="${esc(ex.name)}" data-video-id="${ex.videoId || ''}" data-difficulty="${esc(ex.difficulty)}">
             <div class="ex-lib-card-top">
                 <span class="ex-lib-card-name">${esc(ex.name)}</span>
                 <span class="ex-lib-card-diff difficulty-${dc2}">${esc(ex.difficulty)}</span>
             </div>
+            ${tagBadges ? `<div class="ex-lib-card-tags">${tagBadges}</div>` : ''}
             <div class="ex-lib-card-regions">${ex.regionNames.map(r => `<span class="ex-lib-region-tag">${esc(r)}</span>`).join('')}</div>
             <div class="ex-lib-card-meta">${ex.pathologies.slice(0, 3).map(p => esc(p)).join(' · ')}</div>
             <div class="ex-lib-card-muscles">${ex.muscles.map(m => esc(m)).join(', ')}</div>
+            ${precautionHtml}
             <div class="ex-lib-card-actions">
                 <button class="ex-lib-btn-video" title="영상 보기">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -202,6 +264,19 @@ function bindEvents() {
             btn.classList.add('active');
             renderExercises();
         });
+    });
+
+    // 태그 필터
+    document.getElementById('ex-lib-tag-filters')?.addEventListener('click', (e) => {
+        const chip = e.target.closest('.ex-tag-chip');
+        if (!chip) return;
+        const dim = chip.dataset.tagDim;
+        const val = chip.dataset.tagVal;
+        selectedTags[dim] = val;
+        // 해당 행만 active 갱신
+        chip.closest('.ex-tag-filter-row').querySelectorAll('.ex-tag-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        renderExercises();
     });
 
     // 검색

@@ -2,6 +2,56 @@
 // 24개 PREDEFINED_REGIONS에 대한 상세 해부학 정보 제공
 // videoId: YouTube 영상 ID (피지컬갤러리, 하이닥 등 검증된 한국 물리치료 채널)
 
+// ═══ 운동 태그 분류 체계 ═══
+
+export const EXERCISE_TAG_DEFS = {
+    purpose: {
+        label: '목적',
+        options: [
+            { id: 'mobility',  label: '가동성',   color: '#4FC3F7' },
+            { id: 'stability', label: '안정화',   color: '#81C784' },
+            { id: 'strength',  label: '근력',     color: '#FF8A65' },
+            { id: 'neural',    label: '신경가동', color: '#CE93D8' },
+            { id: 'breathing', label: '호흡/코어', color: '#FFD54F' },
+        ]
+    },
+    phase: {
+        label: '단계',
+        options: [
+            { id: 'acute',    label: '급성기',   color: '#ef5350' },
+            { id: 'subacute', label: '아급성기', color: '#FFA726' },
+            { id: 'chronic',  label: '만성기',   color: '#66BB6A' },
+        ]
+    },
+    equipment: {
+        label: '도구',
+        options: [
+            { id: 'none',        label: '맨몸',     color: '#90A4AE' },
+            { id: 'band',        label: '밴드',     color: '#7E57C2' },
+            { id: 'foam_roller', label: '폼롤러',   color: '#26A69A' },
+            { id: 'ball',        label: '짐볼',     color: '#42A5F5' },
+            { id: 'balance',     label: '균형보드', color: '#8D6E63' },
+            { id: 'golf_ball',   label: '골프공',   color: '#BDBDBD' },
+            { id: 'towel',       label: '타월',     color: '#A1887F' },
+        ]
+    },
+    pattern: {
+        label: '패턴',
+        options: [
+            { id: 'stretch',   label: '스트레칭',   color: '#4DD0E1' },
+            { id: 'hinge',     label: '힌지',       color: '#FF7043' },
+            { id: 'squat',     label: '스쿼트',     color: '#5C6BC0' },
+            { id: 'lunge',     label: '런지',       color: '#EC407A' },
+            { id: 'reach',     label: '리치',       color: '#AB47BC' },
+            { id: 'rotation',  label: '로테이션',   color: '#FFA000' },
+            { id: 'isometric', label: '등척성',     color: '#78909C' },
+            { id: 'eccentric', label: '편심성',     color: '#8D6E63' },
+            { id: 'massage',   label: '자가마사지', color: '#AED581' },
+            { id: 'plank',     label: '플랭크',     color: '#7986CB' },
+        ]
+    }
+};
+
 const ANATOMY_DB = {
     head_l: {
         name: '머리 (좌)',
@@ -10,9 +60,9 @@ const ANATOMY_DB = {
         keyStructures: ['측두골', '두정골', '측두하악관절(TMJ)'],
         commonPathologies: ['긴장성 두통', 'TMJ 장애', '측두근 긴장'],
         exercises: [
-            { name: 'TMJ 스트레칭', difficulty: '쉬움', videoId: 'pnlnBFsCLCE' },
-            { name: '측두근 자가마사지', difficulty: '쉬움', videoId: 'm8QyW9RLEcQ' },
-            { name: '턱 이완 운동', difficulty: '쉬움', videoId: 'pnlnBFsCLCE' }
+            { name: 'TMJ 스트레칭', difficulty: '쉬움', videoId: 'pnlnBFsCLCE', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: 'TMJ 탈구 이력 시 주의. 과도한 개구 금지' },
+            { name: '측두근 자가마사지', difficulty: '쉬움', videoId: 'm8QyW9RLEcQ', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['massage'], precautions: '두통 악화 시 중단' },
+            { name: '턱 이완 운동', difficulty: '쉬움', videoId: 'pnlnBFsCLCE', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '' }
         ],
         cameraPreset: { position: 'right', yOffset: 0.4 }
     },
@@ -23,9 +73,9 @@ const ANATOMY_DB = {
         keyStructures: ['측두골', '두정골', '측두하악관절(TMJ)'],
         commonPathologies: ['긴장성 두통', 'TMJ 장애', '측두근 긴장'],
         exercises: [
-            { name: 'TMJ 스트레칭', difficulty: '쉬움', videoId: 'pnlnBFsCLCE' },
-            { name: '측두근 자가마사지', difficulty: '쉬움', videoId: 'm8QyW9RLEcQ' },
-            { name: '턱 이완 운동', difficulty: '쉬움', videoId: 'pnlnBFsCLCE' }
+            { name: 'TMJ 스트레칭', difficulty: '쉬움', videoId: 'pnlnBFsCLCE', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: 'TMJ 탈구 이력 시 주의. 과도한 개구 금지' },
+            { name: '측두근 자가마사지', difficulty: '쉬움', videoId: 'm8QyW9RLEcQ', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['massage'], precautions: '두통 악화 시 중단' },
+            { name: '턱 이완 운동', difficulty: '쉬움', videoId: 'pnlnBFsCLCE', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '' }
         ],
         cameraPreset: { position: 'left', yOffset: 0.4 }
     },
@@ -36,10 +86,10 @@ const ANATOMY_DB = {
         keyStructures: ['경추(C1-C7)', '추간판', '경동맥'],
         commonPathologies: ['경추 디스크', '사경', '근막통증 증후군', '경추 퇴행성 변화'],
         exercises: [
-            { name: '경추 측굴 스트레칭', difficulty: '쉬움', videoId: 'stVphpo6uC4' },
-            { name: 'SCM 스트레칭', difficulty: '쉬움', videoId: 'Z9nantEZ1bo' },
-            { name: '딥넥 플렉서 강화', difficulty: '보통', videoId: 'eKUH0Rcwhd8' },
-            { name: '경추 등척성 운동', difficulty: '보통', videoId: 'eKUH0Rcwhd8' }
+            { name: '경추 측굴 스트레칭', difficulty: '쉬움', videoId: 'stVphpo6uC4', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '경추 디스크 환자 통증 유발 방향 금지. 어지러움 시 중단' },
+            { name: 'SCM 스트레칭', difficulty: '쉬움', videoId: 'Z9nantEZ1bo', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '경동맥 압박 주의. 어지러움 시 즉시 중단' },
+            { name: '딥넥 플렉서 강화', difficulty: '보통', videoId: 'eKUH0Rcwhd8', purpose: ['stability'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '경추 수술 후 6주 이내 금지' },
+            { name: '경추 등척성 운동', difficulty: '보통', videoId: 'eKUH0Rcwhd8', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '급성 디스크 시 금지. 통증 범위 내에서 수행' }
         ],
         cameraPreset: { position: 'right', yOffset: 0.35 }
     },
@@ -50,10 +100,10 @@ const ANATOMY_DB = {
         keyStructures: ['경추(C1-C7)', '추간판', '경동맥'],
         commonPathologies: ['경추 디스크', '사경', '근막통증 증후군', '경추 퇴행성 변화'],
         exercises: [
-            { name: '경추 측굴 스트레칭', difficulty: '쉬움', videoId: 'stVphpo6uC4' },
-            { name: 'SCM 스트레칭', difficulty: '쉬움', videoId: 'Z9nantEZ1bo' },
-            { name: '딥넥 플렉서 강화', difficulty: '보통', videoId: 'eKUH0Rcwhd8' },
-            { name: '경추 등척성 운동', difficulty: '보통', videoId: 'eKUH0Rcwhd8' }
+            { name: '경추 측굴 스트레칭', difficulty: '쉬움', videoId: 'stVphpo6uC4', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '경추 디스크 환자 통증 유발 방향 금지. 어지러움 시 중단' },
+            { name: 'SCM 스트레칭', difficulty: '쉬움', videoId: 'Z9nantEZ1bo', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '경동맥 압박 주의. 어지러움 시 즉시 중단' },
+            { name: '딥넥 플렉서 강화', difficulty: '보통', videoId: 'eKUH0Rcwhd8', purpose: ['stability'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '경추 수술 후 6주 이내 금지' },
+            { name: '경추 등척성 운동', difficulty: '보통', videoId: 'eKUH0Rcwhd8', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '급성 디스크 시 금지. 통증 범위 내에서 수행' }
         ],
         cameraPreset: { position: 'left', yOffset: 0.35 }
     },
@@ -64,10 +114,10 @@ const ANATOMY_DB = {
         keyStructures: ['견갑골', '쇄골', '견봉', '견관절(GH joint)', '견봉하 공간'],
         commonPathologies: ['회전근개 손상', '충돌 증후군', '오십견(동결견)', '견갑골 이상운동증'],
         exercises: [
-            { name: '코드만 진자운동', difficulty: '쉬움', videoId: 'OaIdPbaglt0' },
-            { name: '외회전 밴드운동', difficulty: '보통', videoId: 'FSUSzHjcc4I' },
-            { name: '견갑골 세팅', difficulty: '보통', videoId: 'XXgaV3vsmGQ' },
-            { name: 'Y-T-W 운동', difficulty: '보통', videoId: 'BMKZ1cN7MkY' }
+            { name: '코드만 진자운동', difficulty: '쉬움', videoId: 'OaIdPbaglt0', purpose: ['mobility'], phase: ['acute', 'subacute'], equipment: ['none'], pattern: ['stretch'], precautions: '급성 탈구/골절 시 금지' },
+            { name: '외회전 밴드운동', difficulty: '보통', videoId: 'FSUSzHjcc4I', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['band'], pattern: ['rotation'], precautions: '회전근개 파열 급성기 금지. 통증 없는 범위에서 수행' },
+            { name: '견갑골 세팅', difficulty: '보통', videoId: 'XXgaV3vsmGQ', purpose: ['stability'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '' },
+            { name: 'Y-T-W 운동', difficulty: '보통', videoId: 'BMKZ1cN7MkY', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['reach'], precautions: '충돌 증후군 시 통증 범위 주의' }
         ],
         cameraPreset: { position: 'right', yOffset: 0.2 }
     },
@@ -78,10 +128,10 @@ const ANATOMY_DB = {
         keyStructures: ['견갑골', '쇄골', '견봉', '견관절(GH joint)', '견봉하 공간'],
         commonPathologies: ['회전근개 손상', '충돌 증후군', '오십견(동결견)', '견갑골 이상운동증'],
         exercises: [
-            { name: '코드만 진자운동', difficulty: '쉬움', videoId: 'OaIdPbaglt0' },
-            { name: '외회전 밴드운동', difficulty: '보통', videoId: 'FSUSzHjcc4I' },
-            { name: '견갑골 세팅', difficulty: '보통', videoId: 'XXgaV3vsmGQ' },
-            { name: 'Y-T-W 운동', difficulty: '보통', videoId: 'BMKZ1cN7MkY' }
+            { name: '코드만 진자운동', difficulty: '쉬움', videoId: 'OaIdPbaglt0', purpose: ['mobility'], phase: ['acute', 'subacute'], equipment: ['none'], pattern: ['stretch'], precautions: '급성 탈구/골절 시 금지' },
+            { name: '외회전 밴드운동', difficulty: '보통', videoId: 'FSUSzHjcc4I', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['band'], pattern: ['rotation'], precautions: '회전근개 파열 급성기 금지. 통증 없는 범위에서 수행' },
+            { name: '견갑골 세팅', difficulty: '보통', videoId: 'XXgaV3vsmGQ', purpose: ['stability'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '' },
+            { name: 'Y-T-W 운동', difficulty: '보통', videoId: 'BMKZ1cN7MkY', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['reach'], precautions: '충돌 증후군 시 통증 범위 주의' }
         ],
         cameraPreset: { position: 'left', yOffset: 0.2 }
     },
@@ -92,9 +142,9 @@ const ANATOMY_DB = {
         keyStructures: ['흉골', '늑골(1-12)', '흉곽'],
         commonPathologies: ['흉곽출구증후군', '소흉근 단축', '늑간신경통'],
         exercises: [
-            { name: '도어 스트레칭', difficulty: '쉬움', videoId: '42DrZRxsZas' },
-            { name: '대흉근 스트레칭', difficulty: '쉬움', videoId: 'piTKJeo6RSs' },
-            { name: '전거근 펀치', difficulty: '보통', videoId: 'AmQ7HxgP_aU' }
+            { name: '도어 스트레칭', difficulty: '쉬움', videoId: '42DrZRxsZas', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '전방 불안정 시 과도한 신전 주의' },
+            { name: '대흉근 스트레칭', difficulty: '쉬움', videoId: 'piTKJeo6RSs', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '' },
+            { name: '전거근 펀치', difficulty: '보통', videoId: 'AmQ7HxgP_aU', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['reach'], precautions: '견갑골 익상 시 가벼운 저항으로 시작' }
         ],
         cameraPreset: { position: 'front', yOffset: 0.15 }
     },
@@ -105,9 +155,9 @@ const ANATOMY_DB = {
         keyStructures: ['흉골', '늑골(1-12)', '흉곽'],
         commonPathologies: ['흉곽출구증후군', '소흉근 단축', '늑간신경통'],
         exercises: [
-            { name: '도어 스트레칭', difficulty: '쉬움', videoId: '42DrZRxsZas' },
-            { name: '대흉근 스트레칭', difficulty: '쉬움', videoId: 'piTKJeo6RSs' },
-            { name: '전거근 펀치', difficulty: '보통', videoId: 'AmQ7HxgP_aU' }
+            { name: '도어 스트레칭', difficulty: '쉬움', videoId: '42DrZRxsZas', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '전방 불안정 시 과도한 신전 주의' },
+            { name: '대흉근 스트레칭', difficulty: '쉬움', videoId: 'piTKJeo6RSs', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '' },
+            { name: '전거근 펀치', difficulty: '보통', videoId: 'AmQ7HxgP_aU', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['reach'], precautions: '견갑골 익상 시 가벼운 저항으로 시작' }
         ],
         cameraPreset: { position: 'front', yOffset: 0.15 }
     },
@@ -118,10 +168,10 @@ const ANATOMY_DB = {
         keyStructures: ['흉추(T1-T6)', '추간판', '늑골두 관절'],
         commonPathologies: ['흉추 과후만', '능형근 약화', '상교차 증후군'],
         exercises: [
-            { name: '로우(Rows)', difficulty: '보통', videoId: 'B_smaviLr1g' },
-            { name: '흉추 익스텐션', difficulty: '보통', videoId: 'j-yZc63FfKk' },
-            { name: '폼롤러 흉추 가동술', difficulty: '쉬움', videoId: 'kDPF8UeRgRo' },
-            { name: '능형근 스퀴즈', difficulty: '쉬움', videoId: '3zc1mGfA5kc' }
+            { name: '로우(Rows)', difficulty: '보통', videoId: 'B_smaviLr1g', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['band'], pattern: ['hinge'], precautions: '흉추 골절/골다공증 시 주의' },
+            { name: '흉추 익스텐션', difficulty: '보통', videoId: 'j-yZc63FfKk', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '골다공증 환자 과신전 금지' },
+            { name: '폼롤러 흉추 가동술', difficulty: '쉬움', videoId: 'kDPF8UeRgRo', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['foam_roller'], pattern: ['stretch'], precautions: '골다공증/늑골 골절 시 금지' },
+            { name: '능형근 스퀴즈', difficulty: '쉬움', videoId: '3zc1mGfA5kc', purpose: ['stability'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '' }
         ],
         cameraPreset: { position: 'back', yOffset: 0.15 }
     },
@@ -132,10 +182,10 @@ const ANATOMY_DB = {
         keyStructures: ['흉추(T1-T6)', '추간판', '늑골두 관절'],
         commonPathologies: ['흉추 과후만', '능형근 약화', '상교차 증후군'],
         exercises: [
-            { name: '로우(Rows)', difficulty: '보통', videoId: 'B_smaviLr1g' },
-            { name: '흉추 익스텐션', difficulty: '보통', videoId: 'j-yZc63FfKk' },
-            { name: '폼롤러 흉추 가동술', difficulty: '쉬움', videoId: 'kDPF8UeRgRo' },
-            { name: '능형근 스퀴즈', difficulty: '쉬움', videoId: '3zc1mGfA5kc' }
+            { name: '로우(Rows)', difficulty: '보통', videoId: 'B_smaviLr1g', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['band'], pattern: ['hinge'], precautions: '흉추 골절/골다공증 시 주의' },
+            { name: '흉추 익스텐션', difficulty: '보통', videoId: 'j-yZc63FfKk', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '골다공증 환자 과신전 금지' },
+            { name: '폼롤러 흉추 가동술', difficulty: '쉬움', videoId: 'kDPF8UeRgRo', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['foam_roller'], pattern: ['stretch'], precautions: '골다공증/늑골 골절 시 금지' },
+            { name: '능형근 스퀴즈', difficulty: '쉬움', videoId: '3zc1mGfA5kc', purpose: ['stability'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '' }
         ],
         cameraPreset: { position: 'back', yOffset: 0.15 }
     },
@@ -146,10 +196,10 @@ const ANATOMY_DB = {
         keyStructures: ['요추(L1-L5)', '추간판', '후관절', '황색인대'],
         commonPathologies: ['요추 디스크 탈출', '요추 협착증', '요방형근 경련', '척추 전방전위증'],
         exercises: [
-            { name: '캣카우 스트레칭', difficulty: '쉬움', videoId: 'VCx-4bFLBRM' },
-            { name: '버드독', difficulty: '보통', videoId: 'RN22oMwDnVY' },
-            { name: '데드버그', difficulty: '보통', videoId: 'NKO0OKO4wq0' },
-            { name: '맥길 빅3', difficulty: '보통', videoId: 'VzCi28QMqVM' }
+            { name: '캣카우 스트레칭', difficulty: '쉬움', videoId: 'VCx-4bFLBRM', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '급성 디스크 시 통증 방향 주의' },
+            { name: '버드독', difficulty: '보통', videoId: 'RN22oMwDnVY', purpose: ['stability'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['reach'], precautions: '급성 요통 시 금지. 골반 수평 유지' },
+            { name: '데드버그', difficulty: '보통', videoId: 'NKO0OKO4wq0', purpose: ['stability', 'breathing'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['reach'], precautions: '복직근 이개 시 주의' },
+            { name: '맥길 빅3', difficulty: '보통', videoId: 'VzCi28QMqVM', purpose: ['stability', 'breathing'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['plank'], precautions: '급성 디스크 탈출 시 사이드 플랭크 주의' }
         ],
         cameraPreset: { position: 'back', yOffset: 0.0 }
     },
@@ -160,10 +210,10 @@ const ANATOMY_DB = {
         keyStructures: ['요추(L1-L5)', '추간판', '후관절', '황색인대'],
         commonPathologies: ['요추 디스크 탈출', '요추 협착증', '요방형근 경련', '척추 전방전위증'],
         exercises: [
-            { name: '캣카우 스트레칭', difficulty: '쉬움', videoId: 'VCx-4bFLBRM' },
-            { name: '버드독', difficulty: '보통', videoId: 'RN22oMwDnVY' },
-            { name: '데드버그', difficulty: '보통', videoId: 'NKO0OKO4wq0' },
-            { name: '맥길 빅3', difficulty: '보통', videoId: 'VzCi28QMqVM' }
+            { name: '캣카우 스트레칭', difficulty: '쉬움', videoId: 'VCx-4bFLBRM', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '급성 디스크 시 통증 방향 주의' },
+            { name: '버드독', difficulty: '보통', videoId: 'RN22oMwDnVY', purpose: ['stability'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['reach'], precautions: '급성 요통 시 금지. 골반 수평 유지' },
+            { name: '데드버그', difficulty: '보통', videoId: 'NKO0OKO4wq0', purpose: ['stability', 'breathing'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['reach'], precautions: '복직근 이개 시 주의' },
+            { name: '맥길 빅3', difficulty: '보통', videoId: 'VzCi28QMqVM', purpose: ['stability', 'breathing'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['plank'], precautions: '급성 디스크 탈출 시 사이드 플랭크 주의' }
         ],
         cameraPreset: { position: 'back', yOffset: 0.0 }
     },
@@ -174,10 +224,10 @@ const ANATOMY_DB = {
         keyStructures: ['백선', '서혜인대', '복벽근막'],
         commonPathologies: ['복직근 이개', '복벽 탈장', '코어 불안정'],
         exercises: [
-            { name: '복횡근 활성화(드로인)', difficulty: '쉬움', videoId: 'VzCi28QMqVM' },
-            { name: '플랭크', difficulty: '보통', videoId: '86F74fyD3uc' },
-            { name: '사이드 플랭크', difficulty: '보통', videoId: '86F74fyD3uc' },
-            { name: '팔로프 프레스', difficulty: '어려움', videoId: '_DVhhmg7n98' }
+            { name: '복횡근 활성화(드로인)', difficulty: '쉬움', videoId: 'VzCi28QMqVM', purpose: ['breathing', 'stability'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '' },
+            { name: '플랭크', difficulty: '보통', videoId: '86F74fyD3uc', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['plank'], precautions: '급성 요통/복직근 이개 시 금지' },
+            { name: '사이드 플랭크', difficulty: '보통', videoId: '86F74fyD3uc', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['plank'], precautions: '어깨 통증 시 팔꿈치 지지로 전환' },
+            { name: '팔로프 프레스', difficulty: '어려움', videoId: '_DVhhmg7n98', purpose: ['stability', 'strength'], phase: ['chronic'], equipment: ['band'], pattern: ['rotation'], precautions: '급성기 금지. 허리 회전 최소화' }
         ],
         cameraPreset: { position: 'front', yOffset: -0.05 }
     },
@@ -188,10 +238,10 @@ const ANATOMY_DB = {
         keyStructures: ['백선', '서혜인대', '복벽근막'],
         commonPathologies: ['복직근 이개', '복벽 탈장', '코어 불안정'],
         exercises: [
-            { name: '복횡근 활성화(드로인)', difficulty: '쉬움', videoId: 'VzCi28QMqVM' },
-            { name: '플랭크', difficulty: '보통', videoId: '86F74fyD3uc' },
-            { name: '사이드 플랭크', difficulty: '보통', videoId: '86F74fyD3uc' },
-            { name: '팔로프 프레스', difficulty: '어려움', videoId: '_DVhhmg7n98' }
+            { name: '복횡근 활성화(드로인)', difficulty: '쉬움', videoId: 'VzCi28QMqVM', purpose: ['breathing', 'stability'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '' },
+            { name: '플랭크', difficulty: '보통', videoId: '86F74fyD3uc', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['plank'], precautions: '급성 요통/복직근 이개 시 금지' },
+            { name: '사이드 플랭크', difficulty: '보통', videoId: '86F74fyD3uc', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['plank'], precautions: '어깨 통증 시 팔꿈치 지지로 전환' },
+            { name: '팔로프 프레스', difficulty: '어려움', videoId: '_DVhhmg7n98', purpose: ['stability', 'strength'], phase: ['chronic'], equipment: ['band'], pattern: ['rotation'], precautions: '급성기 금지. 허리 회전 최소화' }
         ],
         cameraPreset: { position: 'front', yOffset: -0.05 }
     },
@@ -202,9 +252,9 @@ const ANATOMY_DB = {
         keyStructures: ['상완골', '요골', '척골', '주관절', '수근관절'],
         commonPathologies: ['테니스 엘보', '골프 엘보', '이두근 건염', '수근관 증후군'],
         exercises: [
-            { name: '손목 신전근 스트레칭', difficulty: '쉬움', videoId: 'QfytI3MQR7U' },
-            { name: '편심성 손목 운동', difficulty: '보통', videoId: '9VTCCQm6-1g' },
-            { name: '그립 강화운동', difficulty: '쉬움', videoId: '2hsd6XwYoy4' }
+            { name: '손목 신전근 스트레칭', difficulty: '쉬움', videoId: 'QfytI3MQR7U', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '골절 회복기 시 의사 승인 필요' },
+            { name: '편심성 손목 운동', difficulty: '보통', videoId: '9VTCCQm6-1g', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['eccentric'], precautions: '급성 건염 시 통증 유발 강도 금지' },
+            { name: '그립 강화운동', difficulty: '쉬움', videoId: '2hsd6XwYoy4', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '수근관 증후군 시 과도한 쥐기 금지' }
         ],
         cameraPreset: { position: 'right', yOffset: 0.05 }
     },
@@ -215,9 +265,9 @@ const ANATOMY_DB = {
         keyStructures: ['상완골', '요골', '척골', '주관절', '수근관절'],
         commonPathologies: ['테니스 엘보', '골프 엘보', '이두근 건염', '수근관 증후군'],
         exercises: [
-            { name: '손목 신전근 스트레칭', difficulty: '쉬움', videoId: 'QfytI3MQR7U' },
-            { name: '편심성 손목 운동', difficulty: '보통', videoId: '9VTCCQm6-1g' },
-            { name: '그립 강화운동', difficulty: '쉬움', videoId: '2hsd6XwYoy4' }
+            { name: '손목 신전근 스트레칭', difficulty: '쉬움', videoId: 'QfytI3MQR7U', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '골절 회복기 시 의사 승인 필요' },
+            { name: '편심성 손목 운동', difficulty: '보통', videoId: '9VTCCQm6-1g', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['eccentric'], precautions: '급성 건염 시 통증 유발 강도 금지' },
+            { name: '그립 강화운동', difficulty: '쉬움', videoId: '2hsd6XwYoy4', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '수근관 증후군 시 과도한 쥐기 금지' }
         ],
         cameraPreset: { position: 'left', yOffset: 0.05 }
     },
@@ -228,10 +278,10 @@ const ANATOMY_DB = {
         keyStructures: ['장골', '비구', '대퇴골두', '고관절순', '천장관절(SI joint)'],
         commonPathologies: ['고관절 충돌 증후군', '이상근 증후군', '천장관절 기능장애', '대퇴비구충돌'],
         exercises: [
-            { name: '클램셸', difficulty: '쉬움', videoId: '_DVhhmg7n98' },
-            { name: '힙 플렉서 스트레칭', difficulty: '쉬움', videoId: 'GJEbZqWL5tU' },
-            { name: '이상근 스트레칭', difficulty: '쉬움', videoId: 'HNfHJfeosOc' },
-            { name: '힙 힌지', difficulty: '보통', videoId: 'iQ7MnBxZpN8' }
+            { name: '클램셸', difficulty: '쉬움', videoId: '_DVhhmg7n98', purpose: ['stability', 'strength'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['rotation'], precautions: '' },
+            { name: '힙 플렉서 스트레칭', difficulty: '쉬움', videoId: 'GJEbZqWL5tU', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['lunge'], precautions: '고관절 전방 불안정 시 과신전 주의' },
+            { name: '이상근 스트레칭', difficulty: '쉬움', videoId: 'HNfHJfeosOc', purpose: ['mobility', 'neural'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '고관절 치환술 후 금지(후방 접근 시)' },
+            { name: '힙 힌지', difficulty: '보통', videoId: 'iQ7MnBxZpN8', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['hinge'], precautions: '급성 요통 시 중립 척추 유지 필수' }
         ],
         cameraPreset: { position: 'right', yOffset: -0.1 }
     },
@@ -242,10 +292,10 @@ const ANATOMY_DB = {
         keyStructures: ['장골', '비구', '대퇴골두', '고관절순', '천장관절(SI joint)'],
         commonPathologies: ['고관절 충돌 증후군', '이상근 증후군', '천장관절 기능장애', '대퇴비구충돌'],
         exercises: [
-            { name: '클램셸', difficulty: '쉬움', videoId: '_DVhhmg7n98' },
-            { name: '힙 플렉서 스트레칭', difficulty: '쉬움', videoId: 'GJEbZqWL5tU' },
-            { name: '이상근 스트레칭', difficulty: '쉬움', videoId: 'HNfHJfeosOc' },
-            { name: '힙 힌지', difficulty: '보통', videoId: 'iQ7MnBxZpN8' }
+            { name: '클램셸', difficulty: '쉬움', videoId: '_DVhhmg7n98', purpose: ['stability', 'strength'], phase: ['acute', 'subacute', 'chronic'], equipment: ['none'], pattern: ['rotation'], precautions: '' },
+            { name: '힙 플렉서 스트레칭', difficulty: '쉬움', videoId: 'GJEbZqWL5tU', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['lunge'], precautions: '고관절 전방 불안정 시 과신전 주의' },
+            { name: '이상근 스트레칭', difficulty: '쉬움', videoId: 'HNfHJfeosOc', purpose: ['mobility', 'neural'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '고관절 치환술 후 금지(후방 접근 시)' },
+            { name: '힙 힌지', difficulty: '보통', videoId: 'iQ7MnBxZpN8', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['hinge'], precautions: '급성 요통 시 중립 척추 유지 필수' }
         ],
         cameraPreset: { position: 'left', yOffset: -0.1 }
     },
@@ -256,10 +306,10 @@ const ANATOMY_DB = {
         keyStructures: ['대퇴골', '슬관절', '장경인대(ITB)'],
         commonPathologies: ['햄스트링 염좌', 'ITB 증후군', '대퇴사두 건염', '대퇴 스트레인'],
         exercises: [
-            { name: '햄스트링 스트레칭', difficulty: '쉬움', videoId: '5ZR8VVNZIvg' },
-            { name: '대퇴사두 스트레칭', difficulty: '쉬움', videoId: 'E7zqjVm-MMA' },
-            { name: '스쿼트', difficulty: '보통', videoId: 'nTcRTG-Py0c' },
-            { name: '노르딕 컬', difficulty: '어려움', videoId: 'nTcRTG-Py0c' }
+            { name: '햄스트링 스트레칭', difficulty: '쉬움', videoId: '5ZR8VVNZIvg', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '좌골신경통 시 통증 각도 이전에 중단' },
+            { name: '대퇴사두 스트레칭', difficulty: '쉬움', videoId: 'E7zqjVm-MMA', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '슬관절 수술 후 과굴곡 주의' },
+            { name: '스쿼트', difficulty: '보통', videoId: 'nTcRTG-Py0c', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['squat'], precautions: '슬관절 통증 시 ROM 제한. 무릎 정렬 주의' },
+            { name: '노르딕 컬', difficulty: '어려움', videoId: 'nTcRTG-Py0c', purpose: ['strength'], phase: ['chronic'], equipment: ['none'], pattern: ['eccentric'], precautions: '급성 햄스트링 손상 시 절대 금지' }
         ],
         cameraPreset: { position: 'front', yOffset: -0.2 }
     },
@@ -270,10 +320,10 @@ const ANATOMY_DB = {
         keyStructures: ['대퇴골', '슬관절', '장경인대(ITB)'],
         commonPathologies: ['햄스트링 염좌', 'ITB 증후군', '대퇴사두 건염', '대퇴 스트레인'],
         exercises: [
-            { name: '햄스트링 스트레칭', difficulty: '쉬움', videoId: '5ZR8VVNZIvg' },
-            { name: '대퇴사두 스트레칭', difficulty: '쉬움', videoId: 'E7zqjVm-MMA' },
-            { name: '스쿼트', difficulty: '보통', videoId: 'nTcRTG-Py0c' },
-            { name: '노르딕 컬', difficulty: '어려움', videoId: 'nTcRTG-Py0c' }
+            { name: '햄스트링 스트레칭', difficulty: '쉬움', videoId: '5ZR8VVNZIvg', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '좌골신경통 시 통증 각도 이전에 중단' },
+            { name: '대퇴사두 스트레칭', difficulty: '쉬움', videoId: 'E7zqjVm-MMA', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '슬관절 수술 후 과굴곡 주의' },
+            { name: '스쿼트', difficulty: '보통', videoId: 'nTcRTG-Py0c', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['squat'], precautions: '슬관절 통증 시 ROM 제한. 무릎 정렬 주의' },
+            { name: '노르딕 컬', difficulty: '어려움', videoId: 'nTcRTG-Py0c', purpose: ['strength'], phase: ['chronic'], equipment: ['none'], pattern: ['eccentric'], precautions: '급성 햄스트링 손상 시 절대 금지' }
         ],
         cameraPreset: { position: 'front', yOffset: -0.2 }
     },
@@ -284,10 +334,10 @@ const ANATOMY_DB = {
         keyStructures: ['경골', '비골', '족관절', '아킬레스건'],
         commonPathologies: ['아킬레스건염', '정강이 부목', '비복근 경련', '구획증후군'],
         exercises: [
-            { name: '카프 레이즈', difficulty: '쉬움', videoId: 'JijbvAl75-A' },
-            { name: '가자미근 스트레칭', difficulty: '쉬움', videoId: 'JijbvAl75-A' },
-            { name: '편심성 카프 레이즈', difficulty: '보통', videoId: 'JijbvAl75-A' },
-            { name: '발목 밴드 운동', difficulty: '보통', videoId: '970LrTe8wBo' }
+            { name: '카프 레이즈', difficulty: '쉬움', videoId: 'JijbvAl75-A', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '아킬레스건 급성 염증 시 금지' },
+            { name: '가자미근 스트레칭', difficulty: '쉬움', videoId: 'JijbvAl75-A', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '' },
+            { name: '편심성 카프 레이즈', difficulty: '보통', videoId: 'JijbvAl75-A', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['eccentric'], precautions: '아킬레스건 파열 수술 후 의사 승인 필요' },
+            { name: '발목 밴드 운동', difficulty: '보통', videoId: '970LrTe8wBo', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['band'], pattern: ['rotation'], precautions: '급성 발목 염좌 시 금지' }
         ],
         cameraPreset: { position: 'front', yOffset: -0.35 }
     },
@@ -298,10 +348,10 @@ const ANATOMY_DB = {
         keyStructures: ['경골', '비골', '족관절', '아킬레스건'],
         commonPathologies: ['아킬레스건염', '정강이 부목', '비복근 경련', '구획증후군'],
         exercises: [
-            { name: '카프 레이즈', difficulty: '쉬움', videoId: 'JijbvAl75-A' },
-            { name: '가자미근 스트레칭', difficulty: '쉬움', videoId: 'JijbvAl75-A' },
-            { name: '편심성 카프 레이즈', difficulty: '보통', videoId: 'JijbvAl75-A' },
-            { name: '발목 밴드 운동', difficulty: '보통', videoId: '970LrTe8wBo' }
+            { name: '카프 레이즈', difficulty: '쉬움', videoId: 'JijbvAl75-A', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['isometric'], precautions: '아킬레스건 급성 염증 시 금지' },
+            { name: '가자미근 스트레칭', difficulty: '쉬움', videoId: 'JijbvAl75-A', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '' },
+            { name: '편심성 카프 레이즈', difficulty: '보통', videoId: 'JijbvAl75-A', purpose: ['strength'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['eccentric'], precautions: '아킬레스건 파열 수술 후 의사 승인 필요' },
+            { name: '발목 밴드 운동', difficulty: '보통', videoId: '970LrTe8wBo', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['band'], pattern: ['rotation'], precautions: '급성 발목 염좌 시 금지' }
         ],
         cameraPreset: { position: 'front', yOffset: -0.35 }
     },
@@ -312,10 +362,10 @@ const ANATOMY_DB = {
         keyStructures: ['거골', '종골', '족근관절', '족궁(내측/외측)'],
         commonPathologies: ['족저근막염', '편평족', '요족', '무지외반증', '발목 불안정'],
         exercises: [
-            { name: '골프공 족저 마사지', difficulty: '쉬움', videoId: '1yJwleqY73s' },
-            { name: '타월 컬', difficulty: '쉬움', videoId: 'GNCpqbXlZ1g' },
-            { name: '카프 스트레칭', difficulty: '쉬움', videoId: '1yJwleqY73s' },
-            { name: '균형 보드 훈련', difficulty: '보통', videoId: '970LrTe8wBo' }
+            { name: '골프공 족저 마사지', difficulty: '쉬움', videoId: '1yJwleqY73s', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['golf_ball'], pattern: ['massage'], precautions: '족저근막 파열 시 금지' },
+            { name: '타월 컬', difficulty: '쉬움', videoId: 'GNCpqbXlZ1g', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['towel'], pattern: ['isometric'], precautions: '' },
+            { name: '카프 스트레칭', difficulty: '쉬움', videoId: '1yJwleqY73s', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '' },
+            { name: '균형 보드 훈련', difficulty: '보통', videoId: '970LrTe8wBo', purpose: ['stability'], phase: ['chronic'], equipment: ['balance'], pattern: ['isometric'], precautions: '급성 발목 염좌/골절 시 절대 금지' }
         ],
         cameraPreset: { position: 'front', yOffset: -0.45 }
     },
@@ -326,10 +376,10 @@ const ANATOMY_DB = {
         keyStructures: ['거골', '종골', '족근관절', '족궁(내측/외측)'],
         commonPathologies: ['족저근막염', '편평족', '요족', '무지외반증', '발목 불안정'],
         exercises: [
-            { name: '골프공 족저 마사지', difficulty: '쉬움', videoId: '1yJwleqY73s' },
-            { name: '타월 컬', difficulty: '쉬움', videoId: 'GNCpqbXlZ1g' },
-            { name: '카프 스트레칭', difficulty: '쉬움', videoId: '1yJwleqY73s' },
-            { name: '균형 보드 훈련', difficulty: '보통', videoId: '970LrTe8wBo' }
+            { name: '골프공 족저 마사지', difficulty: '쉬움', videoId: '1yJwleqY73s', purpose: ['mobility'], phase: ['acute', 'subacute', 'chronic'], equipment: ['golf_ball'], pattern: ['massage'], precautions: '족저근막 파열 시 금지' },
+            { name: '타월 컬', difficulty: '쉬움', videoId: 'GNCpqbXlZ1g', purpose: ['stability', 'strength'], phase: ['subacute', 'chronic'], equipment: ['towel'], pattern: ['isometric'], precautions: '' },
+            { name: '카프 스트레칭', difficulty: '쉬움', videoId: '1yJwleqY73s', purpose: ['mobility'], phase: ['subacute', 'chronic'], equipment: ['none'], pattern: ['stretch'], precautions: '' },
+            { name: '균형 보드 훈련', difficulty: '보통', videoId: '970LrTe8wBo', purpose: ['stability'], phase: ['chronic'], equipment: ['balance'], pattern: ['isometric'], precautions: '급성 발목 염좌/골절 시 절대 금지' }
         ],
         cameraPreset: { position: 'front', yOffset: -0.45 }
     },

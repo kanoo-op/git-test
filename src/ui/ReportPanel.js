@@ -119,10 +119,10 @@ function onReportSelect(type, card) {
 // ── Assessment Report ──
 
 function renderAssessmentReport(patient, container) {
-    const assessments = (patient.assessments || []).slice().sort((a, b) => b.date - a.date);
+    const assessments = (patient.visits || []).slice().sort((a, b) => b.date - a.date);
 
     if (assessments.length === 0) {
-        container.innerHTML = `<div class="rpt-empty">이 환자의 평가 기록이 없습니다.</div>`;
+        container.innerHTML = `<div class="rpt-empty">이 환자의 내원 기록이 없습니다.</div>`;
         return;
     }
 
@@ -146,7 +146,7 @@ function renderAssessmentReport(patient, container) {
 
     const select = document.getElementById('rpt-assess-select');
     const renderPreview = () => {
-        const assessment = patient.assessments.find(a => a.id === select.value);
+        const assessment = patient.visits.find(a => a.id === select.value);
         if (assessment) renderAssessmentPreview(patient, assessment);
     };
     select.addEventListener('change', renderPreview);
@@ -181,7 +181,7 @@ function renderAssessmentPreview(patient, assessment) {
     let html = `
         <div class="rpt-info-grid">
             <div class="rpt-info-item"><span class="rpt-label">환자</span><span>${escapeHtml(patient.name)}</span></div>
-            <div class="rpt-info-item"><span class="rpt-label">평가일</span><span>${new Date(assessment.date).toLocaleDateString('ko-KR')}</span></div>
+            <div class="rpt-info-item"><span class="rpt-label">내원일</span><span>${new Date(assessment.date).toLocaleDateString('ko-KR')}</span></div>
             <div class="rpt-info-item"><span class="rpt-label">진단</span><span>${escapeHtml(patient.diagnosis || '-')}</span></div>
             <div class="rpt-info-item"><span class="rpt-label">부위 수</span><span>${uniqueSelections.size}개</span></div>
         </div>
@@ -258,10 +258,10 @@ function renderAssessmentPreview(patient, assessment) {
 // ── Progress Report ──
 
 function renderProgressReport(patient, container) {
-    const assessments = (patient.assessments || []).slice().sort((a, b) => a.date - b.date);
+    const assessments = (patient.visits || []).slice().sort((a, b) => a.date - b.date);
 
     if (assessments.length === 0) {
-        container.innerHTML = `<div class="rpt-empty">이 환자의 평가 기록이 없습니다.</div>`;
+        container.innerHTML = `<div class="rpt-empty">이 환자의 내원 기록이 없습니다.</div>`;
         return;
     }
 
@@ -297,8 +297,8 @@ function renderProgressReport(patient, container) {
 
             <div class="rpt-info-grid">
                 <div class="rpt-info-item"><span class="rpt-label">환자</span><span>${escapeHtml(patient.name)}</span></div>
-                <div class="rpt-info-item"><span class="rpt-label">평가 기간</span><span>${firstDate} ~ ${lastDate}</span></div>
-                <div class="rpt-info-item"><span class="rpt-label">총 평가 횟수</span><span>${assessments.length}회</span></div>
+                <div class="rpt-info-item"><span class="rpt-label">내원 기간</span><span>${firstDate} ~ ${lastDate}</span></div>
+                <div class="rpt-info-item"><span class="rpt-label">총 내원 횟수</span><span>${assessments.length}회</span></div>
                 <div class="rpt-info-item"><span class="rpt-label">경과 일수</span><span>${daysBetween}일</span></div>
             </div>
 
@@ -311,7 +311,7 @@ function renderProgressReport(patient, container) {
             ${assessments.length >= 2 ? `
             <div class="rpt-chart-wrap">
                 <canvas id="rpt-trend-canvas"></canvas>
-            </div>` : '<div class="rpt-empty">추이 차트를 표시하려면 2건 이상의 평가가 필요합니다.</div>'}
+            </div>` : '<div class="rpt-empty">추이 차트를 표시하려면 2건 이상의 내원이 필요합니다.</div>'}
 
             ${allRegions.size > 0 ? renderSeverityComparisonTable(firstSevMap, lastSevMap, allRegions) : ''}
         </div>
@@ -343,7 +343,7 @@ function renderSeverityComparisonTable(firstMap, lastMap, allRegions) {
         (a, b) => regionSortIndex(a) - regionSortIndex(b)
     );
     let html = `<table class="rpt-table rpt-compare-table">
-        <thead><tr><th>부위</th><th>첫 평가</th><th>최근 평가</th><th>변화</th></tr></thead>
+        <thead><tr><th>부위</th><th>첫 내원</th><th>최근 내원</th><th>변화</th></tr></thead>
         <tbody>`;
     for (const region of sortedRegions) {
         const firstSev = firstMap.get(region) || 'normal';
@@ -478,7 +478,7 @@ async function renderProgressChart(assessments) {
 // ── Referral Report ──
 
 function renderReferralReport(patient, container) {
-    const assessments = (patient.assessments || []).slice().sort((a, b) => b.date - a.date);
+    const assessments = (patient.visits || []).slice().sort((a, b) => b.date - a.date);
     const latest = assessments[0];
 
     let sevSummary = '-';
@@ -514,10 +514,10 @@ function renderReferralReport(patient, container) {
             </div>
 
             ${latest ? `<div class="rpt-info-grid">
-                <div class="rpt-info-item"><span class="rpt-label">최근 평가일</span><span>${new Date(latest.date).toLocaleDateString('ko-KR')}</span></div>
+                <div class="rpt-info-item"><span class="rpt-label">최근 내원일</span><span>${new Date(latest.date).toLocaleDateString('ko-KR')}</span></div>
                 <div class="rpt-info-item"><span class="rpt-label">심각도 분포</span><span>${sevSummary}</span></div>
-                <div class="rpt-info-item"><span class="rpt-label">총 평가 횟수</span><span>${assessments.length}회</span></div>
-            </div>` : '<div class="rpt-empty">평가 기록이 없습니다.</div>'}
+                <div class="rpt-info-item"><span class="rpt-label">총 내원 횟수</span><span>${assessments.length}회</span></div>
+            </div>` : '<div class="rpt-empty">내원 기록이 없습니다.</div>'}
 
             <div class="rpt-form">
                 <div class="rpt-form-group">

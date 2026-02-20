@@ -1,10 +1,10 @@
-// PatientDetail.js - Patient detail view, assessment timeline, comparison, trend chart
+// PatientDetail.js - Patient detail view, visit timeline, comparison, trend chart
 
 import Chart from 'chart.js/auto';
 import * as storage from '../services/Storage.js';
 import { resetRegionColors } from '../anatomy/Highlights.js';
 import { getMeshRegionKey, regionKeyToLabel } from '../anatomy/Regions.js';
-import { getAnatomyInfo } from '../anatomy/AnatomyData.js';
+import { getAnatomyInfo, EXERCISE_TAG_DEFS } from '../anatomy/AnatomyData.js';
 import { updatePatientCard } from '../ui/Sidebar.js';
 import { SEV_LABELS, SEV_COLORS, GENDER_LABELS, calculateAge, escapeHtml } from '../utils/helpers.js';
 import {
@@ -62,14 +62,14 @@ export function renderPatientDetail() {
     }
 
     // Quick stats
-    const assessments = patient.assessments || [];
-    const totalAssessments = assessments.length;
-    const lastVisit = totalAssessments > 0
-        ? new Date(Math.max(...assessments.map(a => a.date))).toLocaleDateString('ko-KR')
+    const visits = patient.visits || [];
+    const totalVisits = visits.length;
+    const lastVisitDate = totalVisits > 0
+        ? new Date(Math.max(...visits.map(a => a.date))).toLocaleDateString('ko-KR')
         : '-';
 
     const sevCounts = { normal: 0, mild: 0, moderate: 0, severe: 0 };
-    for (const a of assessments) {
+    for (const a of visits) {
         for (const s of (a.selections || [])) {
             if (s.severity && sevCounts.hasOwnProperty(s.severity)) sevCounts[s.severity]++;
         }
@@ -79,11 +79,11 @@ export function renderPatientDetail() {
 
     document.getElementById('pd-stats').innerHTML = `
         <div class="pd-stat-card">
-            <div class="pd-stat-value">${totalAssessments}</div>
-            <div class="pd-stat-label">총 평가</div>
+            <div class="pd-stat-value">${totalVisits}</div>
+            <div class="pd-stat-label">총 내원</div>
         </div>
         <div class="pd-stat-card">
-            <div class="pd-stat-value" style="font-size:16px;">${lastVisit}</div>
+            <div class="pd-stat-value" style="font-size:16px;">${lastVisitDate}</div>
             <div class="pd-stat-label">마지막 방문</div>
         </div>
         <div class="pd-stat-card">
@@ -205,16 +205,26 @@ function renderAssessmentExercises(assessment) {
     const totalEx = sections.reduce((s, sec) => s + sec.exercises.length, 0);
 
     const sectionsHtml = sections.map(sec => {
-        const exHtml = sec.exercises.map(e => `
+        const exHtml = sec.exercises.map(e => {
+            const tagBadges = (e.purpose || []).map(pid => {
+                const opt = EXERCISE_TAG_DEFS.purpose?.options.find(o => o.id === pid);
+                return opt ? `<span class="pd-rec-tag-badge" style="background:${opt.color}">${escapeHtml(opt.label)}</span>` : '';
+            }).join('');
+            const precautionHtml = e.precautions
+                ? `<div class="pd-rec-precaution" title="${escapeHtml(e.precautions)}">&#9888; ${escapeHtml(e.precautions)}</div>`
+                : '';
+            return `
             <div class="pd-rec-exercise" data-exercise="${escapeHtml(e.name)}" data-video-id="${e.videoId || ''}" data-difficulty="${escapeHtml(e.difficulty)}">
                 <span class="pd-rec-ex-name">${escapeHtml(e.name)}</span>
                 <span class="pd-rec-ex-right">
+                    ${tagBadges}
                     <span class="exercise-difficulty difficulty-${DIFF_CLASS[e.difficulty] || 'medium'}">${escapeHtml(e.difficulty)}</span>
                     <span class="pd-rec-play" title="영상 보기"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>
                     <span class="pd-rec-start" data-start-exercise="${escapeHtml(e.name)}" title="운동하기"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M6 8H5a4 4 0 000 8h1"/><line x1="6" y1="12" x2="18" y2="12"/></svg></span>
                 </span>
+                ${precautionHtml}
             </div>
-        `).join('');
+        `}).join('');
 
         return `
             <div class="pd-rec-region">
@@ -243,7 +253,7 @@ function renderAssessmentExercises(assessment) {
 
 function renderAssessmentTimeline(patient) {
     const timeline = document.getElementById('pd-assessments-timeline');
-    const assessments = patient.assessments || [];
+    const assessments = patient.visits || [];
     const loadedAssessmentId = getLoadedAssessmentId();
     const compareSelections = getCompareSelections();
 
@@ -254,7 +264,7 @@ function renderAssessmentTimeline(patient) {
                     <path d="M9 11l3 3L22 4"/>
                     <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
                 </svg>
-                <p>평가 기록이 없습니다.</p>
+                <p>내원 기록이 없습니다.</p>
             </div>
         `;
         return;
@@ -321,7 +331,7 @@ function renderAssessmentTimeline(patient) {
                 ${renderSoapTimelineSummary(a)}
                 <div class="pd-timeline-actions">
                     <button class="view-assessment" data-id="${a.id}">3D에서 보기</button>
-                    <button class="continue-assessment" data-id="${a.id}">평가 계속하기</button>
+                    <button class="continue-assessment" data-id="${a.id}">세션 계속하기</button>
                     <button class="export-pdf" data-id="${a.id}">PDF</button>
                     <button class="btn-danger-sm delete-assessment" data-id="${a.id}">삭제</button>
                 </div>
@@ -338,7 +348,7 @@ function renderAssessmentTimeline(patient) {
     });
     timeline.querySelectorAll('.delete-assessment').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (confirm('이 평가 기록을 삭제하시겠습니까?')) {
+            if (confirm('이 내원 기록을 삭제하시겠습니까?')) {
                 storage.deleteAssessment(patient.id, btn.dataset.id);
                 if (getLoadedAssessmentId() === btn.dataset.id) {
                     resetRegionColors();
@@ -534,7 +544,7 @@ function renderTrendChart(patient) {
         return;
     }
 
-    const assessments = patient.assessments || [];
+    const assessments = patient.visits || [];
     if (assessments.length < 2) {
         section.style.display = 'none';
         return;
@@ -644,3 +654,6 @@ function renderTrendChart(patient) {
         },
     });
 }
+
+// Forward aliases (new naming convention)
+export { doCompareAssessments as doCompareVisits };

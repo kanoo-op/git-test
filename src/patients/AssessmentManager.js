@@ -1,4 +1,4 @@
-// AssessmentManager.js - Assessment start/end, SOAP notes, region assessment panel, severity handling
+// AssessmentManager.js - Session (visit) start/end, SOAP notes, region assessment panel, severity handling
 
 import * as storage from '../services/Storage.js';
 import { highlightMesh, unhighlightMesh, getHighlightState, deselectCurrentMesh, selectMesh, applyRegionColors, resetRegionColors } from '../anatomy/Highlights.js';
@@ -249,10 +249,13 @@ export function confirmEndAssessment() {
             const updatedAssessment = storage.getAssessment(patient.id, currentAssessment.id);
             if (updatedAssessment) {
                 const summary = storage.generateAssessmentSummary(updatedAssessment);
+                const exercisePlan = buildExercisePlan(updatedAssessment);
                 storage.updateAssessment(patient.id, currentAssessment.id, {
                     summary,
                     overallNotes,
-                    soapNotes
+                    soapNotes,
+                    status: 'completed',
+                    exercisePlan
                 });
             }
         }
@@ -263,6 +266,50 @@ export function confirmEndAssessment() {
     document.getElementById('assessment-banner').style.display = 'none';
     document.getElementById('region-assessment-panel').style.display = 'none';
     hideEndAssessmentModal();
+}
+
+// ======== Exercise Plan Builder ========
+
+const SEVERITY_PHASE_MAP = { severe: 'acute', moderate: 'subacute', mild: 'chronic' };
+
+function buildExercisePlan(assessment) {
+    const exercisePlan = [];
+    const seenBaseRegions = new Set();
+    const regionSevMap = getRegionSeverityMap(assessment);
+
+    for (const [key, sev] of regionSevMap) {
+        const baseKey = key.replace(/_(l|r)$/, '');
+        if (seenBaseRegions.has(baseKey)) continue;
+        seenBaseRegions.add(baseKey);
+
+        const info = getAnatomyInfo(key);
+        if (info && info.exercises) {
+            // severity→phase 매칭: 해당 phase 운동 우선 선택
+            const targetPhase = SEVERITY_PHASE_MAP[sev] || 'chronic';
+            const sorted = [...info.exercises].sort((a, b) => {
+                const aMatch = (a.phase || []).includes(targetPhase) ? 0 : 1;
+                const bMatch = (b.phase || []).includes(targetPhase) ? 0 : 1;
+                return aMatch - bMatch;
+            });
+
+            for (const ex of sorted.slice(0, 2)) {
+                exercisePlan.push({
+                    name: ex.name,
+                    region: info.name.replace(/ \((좌|우)\)$/, ''),
+                    sets: ex.sets || 3,
+                    reps: ex.reps || 10,
+                    difficulty: sev === 'severe' ? 'easy' : (sev === 'moderate' ? 'medium' : 'normal'),
+                    precautions: ex.precautions || '',
+                    videoId: ex.videoId || '',
+                    purpose: ex.purpose || [],
+                    phase: ex.phase || [],
+                    equipment: ex.equipment || [],
+                    pattern: ex.pattern || [],
+                });
+            }
+        }
+    }
+    return exercisePlan;
 }
 
 // ======== SOAP Notes ========
@@ -535,7 +582,7 @@ export function autoFillAllSoapSections() {
     // === A (Assessment): 진행 수준 ===
     const progressEl = document.getElementById('soap-progress-level');
     if (progressEl && progressEl.value === 'initial') {
-        const prevAssessments = (patient.assessments || [])
+        const prevAssessments = (patient.visits || [])
             .filter(a => a.id !== currentAssessment.id)
             .sort((a, b) => (b.date || 0) - (a.date || 0));
 
@@ -865,3 +912,10 @@ export function applyRegionSeverity(regionKey, severity) {
     refreshRegionColoring();
     renderRegionAssessmentPanel();
 }
+
+// ======== Forward aliases (new naming convention) ========
+export { startNewAssessment as startNewVisit };
+export { confirmEndAssessment as confirmEndSession };
+export { showEndAssessmentModal as showEndSessionModal };
+export { hideEndAssessmentModal as hideEndSessionModal };
+export { restoreAssessmentHighlights as restoreVisitHighlights };
