@@ -23,6 +23,7 @@ import { initExerciseRecPanel, hideExerciseRecommendations } from './ui/Exercise
 import { initExerciseMode, stopExerciseMode } from './pose/ExerciseMode.js';
 import { initExerciseLibrary } from './ui/ExerciseLibrary.js';
 import { initReportPanel } from './ui/ReportPanel.js';
+import { initSoapRecordsView } from './patients/SoapRecords.js';
 import { initTherapyCenters, activateTherapyCentersView } from './ui/TherapyCenters.js';
 import { handleLogout } from './services/Auth.js';
 
@@ -112,6 +113,7 @@ loadModel(
         initExerciseMode();
         initExerciseLibrary();
         initReportPanel();
+        initSoapRecordsView();
         initTherapyCenters();
         window._activateTherapyCentersView = activateTherapyCentersView;
         initViewModeToggle();

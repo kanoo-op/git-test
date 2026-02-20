@@ -15,6 +15,7 @@ import { renderMappingEditor, showNewRegionForm, hideNewRegionForm, saveNewRegio
 import { hideExerciseRecommendations } from './ExerciseRecommendation.js';
 import { refreshReportPanel } from './ReportPanel.js';
 import { stopRealtimePose, isRealtimeRunning } from '../pose/RealtimePose.js';
+import { renderSoapRecordsView } from '../patients/SoapRecords.js';
 
 // ======== Shared State ========
 
@@ -193,6 +194,7 @@ export function switchView(view) {
             break;
         case 'soap-records':
             document.getElementById('soap-records-view').style.display = 'block';
+            renderSoapRecordsView();
             break;
         case 'exercise':
             document.getElementById('exercise-view').style.display = 'block';

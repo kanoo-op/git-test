@@ -17,6 +17,7 @@ import {
 } from '../ui/ViewRouter.js';
 import { restoreAssessmentHighlights, showRegionPanelIfMapped, fillMissingRegionsWithNormal } from './AssessmentManager.js';
 import { exportAssessmentPDF } from './PdfExport.js';
+import { renderPatientSoapTab } from './SoapRecords.js';
 
 let trendChartInstance = null;
 
@@ -102,6 +103,26 @@ export function renderPatientDetail() {
     document.getElementById('comparison-container').style.display = 'none';
     document.getElementById('btn-compare-assessments').style.display = 'none';
     getCompareSelections().clear();
+
+    // 탭 초기화
+    initPatientDetailTabs();
+}
+
+function initPatientDetailTabs() {
+    const tabs = document.querySelectorAll('#pd-tabs .pd-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.pd-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const target = tab.dataset.pdTab;
+            const content = document.getElementById(`pd-tab-${target}`);
+            if (content) content.classList.add('active');
+            if (target === 'soap') {
+                renderPatientSoapTab();
+            }
+        });
+    });
 }
 
 function renderSoapTimelineSummary(a) {
@@ -111,13 +132,32 @@ function renderSoapTimelineSummary(a) {
     }
 
     const s = soap.subjective || {};
+    const o = soap.objective || {};
+    const as = soap.assessment || {};
     const p = soap.plan || {};
-    let html = '<div class="soap-timeline-summary">';
 
-    if (s.chiefComplaint) {
-        html += `<div class="soap-chief">S: ${escapeHtml(s.chiefComplaint)}</div>`;
+    // SOAP 데이터가 하나라도 있는지 체크
+    const hasAnyData = s.chiefComplaint || s.painScale > 0 || s.painLocation || s.symptomDescription
+        || o.autoFindings || o.rom || o.mmt
+        || as.clinicalImpression
+        || p.treatment || p.hep || p.frequency;
+
+    if (!hasAnyData) {
+        return a.overallNotes ? `<div class="pd-timeline-notes">${escapeHtml(a.overallNotes)}</div>` : '';
     }
 
+    let html = '<div class="soap-timeline-summary">';
+
+    // S: 주호소 또는 통증 위치
+    if (s.chiefComplaint) {
+        html += `<div class="soap-chief">S: ${escapeHtml(s.chiefComplaint)}</div>`;
+    } else if (s.painLocation) {
+        html += `<div class="soap-chief">S: 통증 부위 - ${escapeHtml(s.painLocation)}</div>`;
+    } else if (s.symptomDescription) {
+        html += `<div class="soap-chief">S: ${escapeHtml(s.symptomDescription)}</div>`;
+    }
+
+    // VAS
     if (s.painScale > 0) {
         const pct = (s.painScale / 10) * 100;
         const color = s.painScale <= 3 ? '#4CAF50' : s.painScale <= 6 ? '#FF9800' : '#F44336';
@@ -129,8 +169,31 @@ function renderSoapTimelineSummary(a) {
         </div>`;
     }
 
+    // O: 검사 소견 (자동채우기 결과)
+    if (o.autoFindings && !s.chiefComplaint && !s.painLocation) {
+        const firstLine = o.autoFindings.split('\n')[0];
+        html += `<div class="soap-obj-brief">O: ${escapeHtml(firstLine)}</div>`;
+    }
+
+    // A: 임상 소견
+    if (as.clinicalImpression) {
+        const brief = as.clinicalImpression.length > 80
+            ? as.clinicalImpression.substring(0, 80) + '...'
+            : as.clinicalImpression;
+        html += `<div class="soap-assess-brief">A: ${escapeHtml(brief)}</div>`;
+    }
+
+    // P: 치료 계획 또는 HEP
     if (p.treatment) {
         html += `<div class="soap-plan-brief">P: ${escapeHtml(p.treatment)}</div>`;
+    } else if (p.hep) {
+        const brief = p.hep.length > 80 ? p.hep.substring(0, 80) + '...' : p.hep;
+        html += `<div class="soap-plan-brief">P: HEP - ${escapeHtml(brief)}</div>`;
+    }
+
+    // 빈도
+    if (p.frequency) {
+        html += `<div class="soap-freq-brief">${escapeHtml(p.frequency)}</div>`;
     }
 
     html += '</div>';
@@ -315,23 +378,24 @@ function renderAssessmentTimeline(patient) {
                 </label>
                 <div class="pd-timeline-date">
                     ${date}
+                    ${a.type === 'soap-only' ? '<span class="soap-type-badge standalone">SOAP</span>' : ''}
                     ${isLoaded ? '<span class="viewing-badge">보는 중</span>' : ''}
                     ${hasPosturePhoto ? '<span class="posture-badge">자세분석</span>' : ''}
                 </div>
                 <div class="pd-timeline-summary">
-                    ${selections.length}개 부위 | ${a.summary ? escapeHtml(a.summary) : '요약 없음'}
+                    ${a.type === 'soap-only' ? (a.summary ? escapeHtml(a.summary) : 'SOAP 기록') : `${selections.length}개 부위 | ${a.summary ? escapeHtml(a.summary) : '요약 없음'}`}
                 </div>
                 ${postureHtml}
-                <div class="pd-timeline-tags">
+                ${a.type !== 'soap-only' ? `<div class="pd-timeline-tags">
                     ${Object.entries(sevCounts).map(([sev, count]) =>
                         `<span class="severity-tag ${sev}">${SEV_LABELS[sev] || sev}: ${count}</span>`
                     ).join('')}
-                </div>
+                </div>` : ''}
                 ${exerciseRecHtml}
                 ${renderSoapTimelineSummary(a)}
                 <div class="pd-timeline-actions">
-                    <button class="view-assessment" data-id="${a.id}">3D에서 보기</button>
-                    <button class="continue-assessment" data-id="${a.id}">세션 계속하기</button>
+                    ${a.type !== 'soap-only' ? `<button class="view-assessment" data-id="${a.id}">3D에서 보기</button>` : ''}
+                    ${a.type !== 'soap-only' ? `<button class="continue-assessment" data-id="${a.id}">세션 계속하기</button>` : ''}
                     <button class="export-pdf" data-id="${a.id}">PDF</button>
                     <button class="btn-danger-sm delete-assessment" data-id="${a.id}">삭제</button>
                 </div>

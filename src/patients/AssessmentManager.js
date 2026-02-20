@@ -235,9 +235,17 @@ export function confirmEndAssessment() {
     const currentAssessment = getCurrentAssessment();
 
     const overallParts = [];
-    if (soapNotes.subjective.chiefComplaint) overallParts.push('주호소: ' + soapNotes.subjective.chiefComplaint);
+    if (soapNotes.subjective.chiefComplaint) {
+        overallParts.push('주호소: ' + soapNotes.subjective.chiefComplaint);
+    } else if (soapNotes.subjective.painLocation) {
+        overallParts.push('통증: ' + soapNotes.subjective.painLocation);
+    }
     if (soapNotes.assessment.clinicalImpression) overallParts.push('소견: ' + soapNotes.assessment.clinicalImpression);
-    if (soapNotes.plan.treatment) overallParts.push('계획: ' + soapNotes.plan.treatment);
+    if (soapNotes.plan.treatment) {
+        overallParts.push('계획: ' + soapNotes.plan.treatment);
+    } else if (soapNotes.plan.hep) {
+        overallParts.push('HEP: ' + soapNotes.plan.hep);
+    }
     const overallNotes = overallParts.join(' | ');
 
     if (currentAssessment) {
@@ -266,6 +274,9 @@ export function confirmEndAssessment() {
     document.getElementById('assessment-banner').style.display = 'none';
     document.getElementById('region-assessment-panel').style.display = 'none';
     hideEndAssessmentModal();
+
+    // 세션 완료 후 환자 상세 화면으로 전환하여 SOAP 기록 즉시 표시
+    switchView('patient-detail');
 }
 
 // ======== Exercise Plan Builder ========

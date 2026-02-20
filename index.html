@@ -567,26 +567,176 @@
                     <div class="pd-info-grid" id="pd-info-grid"></div>
                 </div>
                 <div class="pd-stats" id="pd-stats"></div>
-                <!-- Trend Chart -->
-                <div id="trend-chart-section" class="trend-chart-section" style="display:none;">
-                    <h3>내원 추이</h3>
-                    <div class="trend-chart-container">
-                        <canvas id="trend-chart"></canvas>
-                    </div>
+
+                <!-- Patient Detail Tabs -->
+                <div class="pd-tabs" id="pd-tabs">
+                    <button class="pd-tab active" data-pd-tab="visits">내원 기록</button>
+                    <button class="pd-tab" data-pd-tab="soap">SOAP 기록</button>
                 </div>
 
-                <div class="pd-assessments-section">
-                    <div class="assessments-header">
-                        <h3>내원 기록</h3>
-                        <div class="pd-assessment-actions">
-                            <button id="btn-compare-assessments" class="btn-secondary btn-sm-pad" style="display:none;">비교</button>
-                            <button id="btn-new-assessment-detail" class="btn-primary btn-sm-pad">+ 새 세션</button>
+                <!-- Tab: 내원 기록 -->
+                <div class="pd-tab-content active" id="pd-tab-visits">
+                    <div id="trend-chart-section" class="trend-chart-section" style="display:none;">
+                        <h3>내원 추이</h3>
+                        <div class="trend-chart-container">
+                            <canvas id="trend-chart"></canvas>
                         </div>
                     </div>
-                    <div id="pd-assessments-timeline" class="pd-assessments-timeline"></div>
+                    <div class="pd-assessments-section">
+                        <div class="assessments-header">
+                            <h3>내원 기록</h3>
+                            <div class="pd-assessment-actions">
+                                <button id="btn-compare-assessments" class="btn-secondary btn-sm-pad" style="display:none;">비교</button>
+                                <button id="btn-new-assessment-detail" class="btn-primary btn-sm-pad">+ 새 세션</button>
+                            </div>
+                        </div>
+                        <div id="pd-assessments-timeline" class="pd-assessments-timeline"></div>
+                    </div>
+                    <div id="comparison-container" class="comparison-container" style="display:none;"></div>
                 </div>
-                <!-- Comparison Container -->
-                <div id="comparison-container" class="comparison-container" style="display:none;"></div>
+
+                <!-- Tab: SOAP 기록 -->
+                <div class="pd-tab-content" id="pd-tab-soap">
+                    <div class="pd-soap-header">
+                        <h3>SOAP 기록</h3>
+                        <button id="btn-new-standalone-soap" class="btn-primary btn-sm-pad">+ 새 SOAP 기록</button>
+                    </div>
+
+                    <!-- 독립 SOAP 작성 폼 -->
+                    <div id="standalone-soap-form" class="standalone-soap-form" style="display:none;">
+                        <div class="standalone-soap-header">
+                            <h4 id="standalone-soap-title">새 SOAP 기록</h4>
+                            <button id="btn-cancel-standalone-soap" class="btn-icon" title="닫기">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                        <div class="soap-tabs">
+                            <button class="soap-tab active" data-standalone-tab="subjective">S <span class="soap-tab-label">주관적</span></button>
+                            <button class="soap-tab" data-standalone-tab="objective">O <span class="soap-tab-label">객관적</span></button>
+                            <button class="soap-tab" data-standalone-tab="assessment">A <span class="soap-tab-label">평가</span></button>
+                            <button class="soap-tab" data-standalone-tab="plan">P <span class="soap-tab-label">계획</span></button>
+                        </div>
+                        <!-- S: Subjective -->
+                        <div class="soap-tab-content active" data-standalone-panel="subjective">
+                            <div class="soap-field-group">
+                                <label>주호소 (Chief Complaint)</label>
+                                <textarea id="standalone-soap-chief-complaint" rows="2" placeholder="환자의 주된 호소..."></textarea>
+                            </div>
+                            <div class="soap-field-group">
+                                <label>통증 척도 (VAS): <span id="standalone-soap-vas-value">0</span>/10</label>
+                                <input type="range" id="standalone-soap-pain-scale" min="0" max="10" value="0">
+                            </div>
+                            <div class="soap-field-group">
+                                <label>통증 부위</label>
+                                <input type="text" id="standalone-soap-pain-location" placeholder="통증 부위...">
+                            </div>
+                            <div class="soap-field-group">
+                                <label>증상 설명</label>
+                                <textarea id="standalone-soap-symptom-desc" rows="2" placeholder="증상에 대한 설명..."></textarea>
+                            </div>
+                            <div class="soap-field-row">
+                                <div class="soap-field-group">
+                                    <label>발생 시기</label>
+                                    <input type="text" id="standalone-soap-onset" placeholder="언제부터?">
+                                </div>
+                                <div class="soap-field-group">
+                                    <label>악화 인자</label>
+                                    <input type="text" id="standalone-soap-aggravating" placeholder="악화 요인...">
+                                </div>
+                                <div class="soap-field-group">
+                                    <label>완화 인자</label>
+                                    <input type="text" id="standalone-soap-relieving" placeholder="완화 요인...">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- O: Objective -->
+                        <div class="soap-tab-content" data-standalone-panel="objective">
+                            <div class="soap-field-group">
+                                <label>ROM (관절가동범위)</label>
+                                <textarea id="standalone-soap-rom" rows="2" placeholder="관절가동범위 측정 결과..."></textarea>
+                            </div>
+                            <div class="soap-field-group">
+                                <label>MMT (도수근력검사)</label>
+                                <textarea id="standalone-soap-mmt" rows="2" placeholder="도수근력검사 결과..."></textarea>
+                            </div>
+                            <div class="soap-field-group">
+                                <label>특수 검사</label>
+                                <textarea id="standalone-soap-special-tests" rows="2" placeholder="특수 검사 결과..."></textarea>
+                            </div>
+                            <div class="soap-field-group">
+                                <label>촉진 소견</label>
+                                <textarea id="standalone-soap-palpation" rows="2" placeholder="촉진 소견..."></textarea>
+                            </div>
+                            <div class="soap-field-group">
+                                <label>보행 분석</label>
+                                <textarea id="standalone-soap-gait" rows="1" placeholder="보행 패턴..."></textarea>
+                            </div>
+                        </div>
+                        <!-- A: Assessment -->
+                        <div class="soap-tab-content" data-standalone-panel="assessment">
+                            <div class="soap-field-group">
+                                <label>임상 소견</label>
+                                <textarea id="standalone-soap-clinical-impression" rows="3" placeholder="임상적 판단 및 소견..."></textarea>
+                            </div>
+                            <div class="soap-field-group">
+                                <label>경과 수준</label>
+                                <select id="standalone-soap-progress-level">
+                                    <option value="initial">초기 평가</option>
+                                    <option value="improving">호전</option>
+                                    <option value="plateau">정체</option>
+                                    <option value="worsening">악화</option>
+                                </select>
+                            </div>
+                            <div class="soap-field-group">
+                                <label>기능 수준</label>
+                                <input type="text" id="standalone-soap-functional-level" placeholder="일상생활 기능 수준...">
+                            </div>
+                            <div class="soap-field-group">
+                                <label>목표</label>
+                                <textarea id="standalone-soap-goals" rows="2" placeholder="치료 목표..."></textarea>
+                            </div>
+                        </div>
+                        <!-- P: Plan -->
+                        <div class="soap-tab-content" data-standalone-panel="plan">
+                            <div class="soap-field-group">
+                                <label>치료 계획</label>
+                                <textarea id="standalone-soap-treatment" rows="3" placeholder="치료 계획..."></textarea>
+                            </div>
+                            <div class="soap-field-group">
+                                <label>홈 운동 프로그램 (HEP)</label>
+                                <textarea id="standalone-soap-hep" rows="2" placeholder="가정 운동 처방..."></textarea>
+                            </div>
+                            <div class="soap-field-row">
+                                <div class="soap-field-group">
+                                    <label>치료 빈도</label>
+                                    <input type="text" id="standalone-soap-frequency" placeholder="주 2~3회">
+                                </div>
+                                <div class="soap-field-group">
+                                    <label>치료 기간</label>
+                                    <input type="text" id="standalone-soap-duration" placeholder="4~6주">
+                                </div>
+                                <div class="soap-field-group">
+                                    <label>다음 방문</label>
+                                    <input type="text" id="standalone-soap-next-visit" placeholder="다음 방문 일정">
+                                </div>
+                            </div>
+                            <div class="soap-field-group">
+                                <label>주의사항</label>
+                                <textarea id="standalone-soap-precautions" rows="2" placeholder="주의사항 및 금기..."></textarea>
+                            </div>
+                            <div class="soap-field-group">
+                                <label>의뢰</label>
+                                <input type="text" id="standalone-soap-referral" placeholder="타과 의뢰 사항...">
+                            </div>
+                        </div>
+                        <div class="standalone-soap-actions">
+                            <button id="btn-save-standalone-soap" class="btn-primary">저장</button>
+                            <button id="btn-cancel-standalone-soap-2" class="btn-secondary">취소</button>
+                        </div>
+                    </div>
+
+                    <div id="pd-soap-list"></div>
+                </div>
             </div>
 
             <!-- Disease Search View -->
@@ -966,29 +1116,19 @@
             <!-- SOAP Records View -->
             <div id="soap-records-view" class="panel-view" style="display:none;">
                 <div class="panel-header">
-                    <h2>치료 기록</h2>
-                    <button class="btn-primary btn-sm-pad" disabled>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        새 기록
-                    </button>
+                    <h2>SOAP 기록</h2>
                 </div>
                 <div class="soap-records-toolbar">
                     <div class="search-box">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="text" placeholder="기록 검색..." disabled>
+                        <input type="text" id="soap-search-input" placeholder="환자명, 주호소, 소견 검색...">
                     </div>
-                    <select disabled>
-                        <option>전체 환자</option>
+                    <select id="soap-patient-filter">
+                        <option value="">전체 환자</option>
                     </select>
-                    <input type="date" disabled>
+                    <input type="date" id="soap-date-filter">
                 </div>
-                <div class="placeholder-empty">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-                    </svg>
-                    <h3>치료 기록이 없습니다</h3>
-                    <p>세션 완료 시 SOAP 노트가 자동 생성됩니다.<br>이 화면에서 모든 치료 기록을 조회하고 관리할 수 있습니다.</p>
-                </div>
+                <div id="soap-records-list" class="soap-records-list"></div>
             </div>
 
             <!-- Exercise View -->
