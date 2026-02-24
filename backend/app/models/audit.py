@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, String, Text, DateTime, JSON, func
+from sqlalchemy import Integer, String, Text, DateTime, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
@@ -9,7 +9,7 @@ from ..database import Base
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     action: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     resource: Mapped[str] = mapped_column(String(50), nullable=False)

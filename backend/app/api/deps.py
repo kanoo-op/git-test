@@ -12,7 +12,7 @@ from ..services.auth_service import decode_access_token
 
 security = HTTPBearer()
 
-ROLE_HIERARCHY = {"admin": 4, "doctor": 3, "therapist": 2, "nurse": 1}
+ROLE_HIERARCHY = {"admin": 4, "doctor": 3, "therapist": 2, "nurse": 1, "patient": 0}
 
 
 async def get_current_user(

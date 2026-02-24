@@ -1,6 +1,7 @@
 // PatientList.js - Patient CRUD, form validation, list rendering
 
 import * as storage from '../services/Storage.js';
+import { createPatient as apiCreatePatient, updatePatient as apiUpdatePatient, deletePatient as apiDeletePatient, createInvite } from '../services/Api.js';
 import { resetRegionColors } from '../anatomy/Highlights.js';
 import { updatePatientCard } from '../ui/Sidebar.js';
 import { calculateAge, escapeHtml } from '../utils/helpers.js';
@@ -66,10 +67,12 @@ export function renderPatientsList() {
     });
 
     list.querySelectorAll('.delete-patient').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             if (confirm('이 환자와 모든 평가 기록을 삭제하시겠습니까?')) {
-                storage.deletePatient(btn.dataset.id);
+                const id = btn.dataset.id;
+                storage.deletePatient(id);
+                try { await apiDeletePatient(id); } catch { /* offline OK */ }
                 updatePatientCard(storage.getCurrentPatient());
                 resetRegionColors();
                 setLoadedAssessmentId(null);
@@ -178,7 +181,7 @@ function validatePatientForm() {
     return valid;
 }
 
-export function savePatient() {
+export async function savePatient() {
     if (!validatePatientForm()) {
         const firstError = document.querySelector('#patient-form .form-group.error input, #patient-form .form-group.error select');
         if (firstError) firstError.focus();
@@ -201,16 +204,103 @@ export function savePatient() {
 
     const editingPatientId = getEditingPatientId();
     if (editingPatientId) {
+        // Update existing patient
         storage.updatePatient(editingPatientId, patientData);
         updatePatientCard(storage.getCurrentPatient());
+        // Sync to backend
+        try {
+            await apiUpdatePatient(editingPatientId, {
+                name: patientData.name,
+                dob: patientData.dob || null,
+                gender: patientData.gender || null,
+                phone: patientData.phone || null,
+                email: patientData.email || null,
+                diagnosis: patientData.diagnosis || null,
+                medical_history: patientData.medicalHistory || null,
+                occupation: patientData.occupation || null,
+                notes: patientData.notes || null,
+            });
+        } catch { /* offline OK */ }
         window.showToast(`${name} 환자 정보가 수정되었습니다.`, 'success');
     } else {
+        // Create new patient - backend first to get server ID
+        let serverId = null;
+        let inviteCode = null;
+        try {
+            const serverPatient = await apiCreatePatient({
+                name: patientData.name,
+                dob: patientData.dob || null,
+                gender: patientData.gender || null,
+                phone: patientData.phone || null,
+                email: patientData.email || null,
+                diagnosis: patientData.diagnosis || null,
+                medical_history: patientData.medicalHistory || null,
+                occupation: patientData.occupation || null,
+                notes: patientData.notes || null,
+            });
+            serverId = serverPatient.id;
+
+            // Auto-generate invite code
+            try {
+                const invite = await createInvite(serverId);
+                inviteCode = invite.invite_code;
+            } catch { /* ignore */ }
+        } catch (e) {
+            console.warn('Backend patient creation failed, creating locally only:', e);
+        }
+
+        // Create locally (use server ID if available)
+        if (serverId) patientData.id = serverId;
         const patient = storage.createPatient(patientData);
         storage.setCurrentPatient(patient.id);
         updatePatientCard(patient);
-        window.showToast(`${name} 환자가 등록되었습니다.`, 'success');
+
+        if (inviteCode) {
+            showInviteCodeModal(name, inviteCode);
+        } else {
+            window.showToast(`${name} 환자가 등록되었습니다.`, 'success');
+        }
     }
 
     hidePatientForm();
     renderPatientsList();
+}
+
+function showInviteCodeModal(patientName, code) {
+    // Remove existing modal if any
+    document.getElementById('invite-code-modal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'invite-code-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;';
+    modal.innerHTML = `
+        <div style="background:var(--bg-primary,#fff);border-radius:12px;padding:32px;max-width:400px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="font-size:14px;color:var(--text-secondary,#666);margin-bottom:8px;">환자 등록 완료</div>
+            <div style="font-size:18px;font-weight:600;color:var(--text-primary,#333);margin-bottom:20px;">${patientName}</div>
+            <div style="font-size:13px;color:var(--text-secondary,#666);margin-bottom:8px;">환자 앱 초대 코드</div>
+            <div style="font-size:36px;font-weight:700;letter-spacing:6px;color:var(--accent,#4A90D9);margin-bottom:8px;font-family:monospace;">${code}</div>
+            <div style="font-size:12px;color:var(--text-tertiary,#999);margin-bottom:24px;">72시간 유효 · 환자에게 이 코드를 전달하세요</div>
+            <div style="display:flex;gap:8px;justify-content:center;">
+                <button id="btn-copy-invite-code" style="padding:10px 24px;background:var(--accent,#4A90D9);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;">코드 복사</button>
+                <button id="btn-close-invite-modal" style="padding:10px 24px;background:var(--bg-secondary,#f0f0f0);color:var(--text-primary,#333);border:none;border-radius:8px;cursor:pointer;font-size:14px;">닫기</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('btn-copy-invite-code').addEventListener('click', () => {
+        navigator.clipboard.writeText(code).then(() => {
+            const btn = document.getElementById('btn-copy-invite-code');
+            btn.textContent = '복사됨!';
+            setTimeout(() => { btn.textContent = '코드 복사'; }, 1500);
+        });
+    });
+
+    document.getElementById('btn-close-invite-modal').addEventListener('click', () => {
+        modal.remove();
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
 }

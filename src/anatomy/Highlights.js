@@ -76,6 +76,16 @@ export function initVertexColors(mesh) {
 export function applyRegionColors(activeRegions) {
     if (!sceneRoot) return;
 
+    // Bug fix: stop pulse before region recolor (prevents stale origColors restore)
+    stopPulseHighlight();
+
+    // Bug fix: save selection reference — material reset below would corrupt savedEmissive
+    const savedSelMesh = selectedMeshData ? selectedMeshData.mesh : null;
+    selectedMeshData = null;
+
+    // Clear hover too — material is about to be replaced
+    clearHoverHighlight();
+
     // Step 1: Reset all meshes to original state
     sceneRoot.traverse((c) => {
         if (!c.isMesh) return;
@@ -97,7 +107,11 @@ export function applyRegionColors(activeRegions) {
     // Also clear the per-mesh highlight tracking so it doesn't conflict
     highlightedMeshes.clear();
 
-    if (!activeRegions || activeRegions.length === 0) return;
+    if (!activeRegions || activeRegions.length === 0) {
+        syncNormalModeMaterials();
+        if (savedSelMesh) selectMesh(savedSelMesh);
+        return;
+    }
 
     const vec3 = new THREE.Vector3();
 
@@ -160,6 +174,14 @@ export function applyRegionColors(activeRegions) {
             c.material.needsUpdate = true;
         }
     });
+
+    // Bug fix: keep normalModeMaterials in sync so render mode switch restores correct state
+    syncNormalModeMaterials();
+
+    // Bug fix: re-apply selection highlight on the (now-fresh) material
+    if (savedSelMesh) {
+        selectMesh(savedSelMesh);
+    }
 }
 
 /**
@@ -167,6 +189,15 @@ export function applyRegionColors(activeRegions) {
  */
 export function resetRegionColors() {
     if (!sceneRoot) return;
+
+    // Bug fix: stop pulse before reset (prevents stale origColors restore)
+    stopPulseHighlight();
+
+    // Bug fix: save selection reference
+    const savedSelMesh = selectedMeshData ? selectedMeshData.mesh : null;
+    selectedMeshData = null;
+    clearHoverHighlight();
+
     sceneRoot.traverse((c) => {
         if (!c.isMesh) return;
         const origMat = origMaterials.get(c.uuid);
@@ -184,6 +215,14 @@ export function resetRegionColors() {
         }
     });
     highlightedMeshes.clear();
+
+    // Bug fix: keep normalModeMaterials in sync
+    syncNormalModeMaterials();
+
+    // Bug fix: re-apply selection
+    if (savedSelMesh) {
+        selectMesh(savedSelMesh);
+    }
 }
 
 // ═══ Per-mesh highlighting (for individual mesh clicks) ═══
@@ -550,6 +589,20 @@ export function stopPulseHighlight() {
         colAttr.needsUpdate = true;
     }
     pulsingMeshes.clear();
+}
+
+/**
+ * Keep normalModeMaterials in sync with current mesh materials.
+ * Called after applyRegionColors/resetRegionColors so that render mode
+ * switching doesn't restore stale materials with wrong emissive values.
+ */
+function syncNormalModeMaterials() {
+    if (!sceneRoot || normalModeMaterials.size === 0) return;
+    sceneRoot.traverse((c) => {
+        if (c.isMesh && normalModeMaterials.has(c.uuid)) {
+            normalModeMaterials.set(c.uuid, c.material);
+        }
+    });
 }
 
 export function setRenderMode(mode) {

@@ -11,6 +11,7 @@ from .database import engine, async_session, Base
 from .services.auth_service import ensure_admin_exists
 
 from .api import auth, patients, assessments, photos, dashboard, mappings, users, audit, backup, naver
+from .api import portal_auth, portal, invites, prescriptions, patient_progress
 
 
 @asynccontextmanager
@@ -59,6 +60,11 @@ app.include_router(users.router)
 app.include_router(audit.router)
 app.include_router(backup.router)
 app.include_router(naver.router)
+app.include_router(portal_auth.router)
+app.include_router(portal.router)
+app.include_router(invites.router)
+app.include_router(prescriptions.router)
+app.include_router(patient_progress.router)
 
 
 @app.get("/api/health")

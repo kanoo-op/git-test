@@ -18,8 +18,15 @@ import {
 import { restoreAssessmentHighlights, showRegionPanelIfMapped, fillMissingRegionsWithNormal } from './AssessmentManager.js';
 import { exportAssessmentPDF } from './PdfExport.js';
 import { renderPatientSoapTab } from './SoapRecords.js';
+import {
+    createInvite, fetchInvites,
+    fetchPatientProgress, fetchPatientCheckins, fetchPatientWorkouts, fetchPatientChartData,
+} from '../services/Api.js';
 
 let trendChartInstance = null;
+let painChartInstance = null;
+let workoutChartInstance = null;
+let progressPollingTimer = null;
 
 export function renderPatientDetail() {
     const currentDetailPatientId = getCurrentDetailPatientId();
@@ -106,6 +113,100 @@ export function renderPatientDetail() {
 
     // 탭 초기화
     initPatientDetailTabs();
+
+    // 초대 코드 섹션
+    initInviteSection(currentDetailPatientId);
+
+    // 진행 기록 탭
+    initProgressTab(currentDetailPatientId);
+}
+
+// ═══ Invite Code Section ═══
+
+function initInviteSection(patientId) {
+    const section = document.getElementById('pd-invite-section');
+    const btn = document.getElementById('btn-generate-invite');
+    if (!section || !btn) return;
+
+    // Remove old listeners by replacing the button
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener('click', async () => {
+        newBtn.disabled = true;
+        newBtn.textContent = '생성 중...';
+        try {
+            const invite = await createInvite(patientId);
+            await renderInviteSection(patientId);
+            newBtn.textContent = '초대 코드 생성';
+            newBtn.disabled = false;
+        } catch (e) {
+            newBtn.textContent = '생성 실패';
+            setTimeout(() => { newBtn.textContent = '초대 코드 생성'; newBtn.disabled = false; }, 1500);
+        }
+    });
+
+    // Load existing invites
+    renderInviteSection(patientId);
+}
+
+async function renderInviteSection(patientId) {
+    const section = document.getElementById('pd-invite-section');
+    if (!section) return;
+
+    try {
+        const invites = await fetchInvites(patientId);
+        if (!invites || invites.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        const activeInvites = invites.filter(inv => !inv.used_at && new Date(inv.expires_at) > new Date());
+        const usedInvites = invites.filter(inv => inv.used_at);
+
+        let html = '<div class="invite-list">';
+
+        if (activeInvites.length > 0) {
+            html += '<div class="invite-group-label">활성 초대 코드</div>';
+            for (const inv of activeInvites) {
+                const expiresDate = new Date(inv.expires_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                html += `
+                    <div class="invite-item active">
+                        <span class="invite-code-display">${inv.invite_code}</span>
+                        <span class="invite-expires">만료: ${expiresDate}</span>
+                        <button class="invite-copy-btn" data-code="${inv.invite_code}" title="복사">복사</button>
+                    </div>`;
+            }
+        }
+
+        if (usedInvites.length > 0) {
+            html += '<div class="invite-group-label">사용된 코드</div>';
+            for (const inv of usedInvites) {
+                const usedDate = new Date(inv.used_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric' });
+                html += `
+                    <div class="invite-item used">
+                        <span class="invite-code-display used">${inv.invite_code}</span>
+                        <span class="invite-expires">사용됨: ${usedDate}</span>
+                    </div>`;
+            }
+        }
+
+        html += '</div>';
+        section.innerHTML = html;
+        section.style.display = '';
+
+        // Copy button handlers
+        section.querySelectorAll('.invite-copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(btn.dataset.code).then(() => {
+                    btn.textContent = '복사됨';
+                    setTimeout(() => { btn.textContent = '복사'; }, 1500);
+                });
+            });
+        });
+    } catch (e) {
+        section.style.display = 'none';
+    }
 }
 
 function initPatientDetailTabs() {
@@ -120,6 +221,10 @@ function initPatientDetailTabs() {
             if (content) content.classList.add('active');
             if (target === 'soap') {
                 renderPatientSoapTab();
+            }
+            if (target === 'progress') {
+                const pid = getCurrentDetailPatientId();
+                if (pid) loadProgressData(pid);
             }
         });
     });
@@ -717,6 +822,212 @@ function renderTrendChart(patient) {
             },
         },
     });
+}
+
+// ═══ Progress Tab (환자 앱 연동 진행 기록) ═══
+
+const RPE_LABELS = { easy: '쉬움', moderate: '보통', hard: '어려움' };
+const REGION_LABELS = {
+    lower_back: '허리', neck: '목', shoulder_right: '우측 어깨', shoulder_left: '좌측 어깨',
+    knee_right: '우측 무릎', knee_left: '좌측 무릎', hip: '엉덩이', upper_back: '상부 등',
+};
+
+function initProgressTab(patientId) {
+    const refreshBtn = document.getElementById('btn-refresh-progress');
+    if (refreshBtn) {
+        const newBtn = refreshBtn.cloneNode(true);
+        refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
+        newBtn.addEventListener('click', () => loadProgressData(patientId));
+    }
+
+    // Start auto-refresh polling (30 seconds)
+    stopProgressPolling();
+    progressPollingTimer = setInterval(() => {
+        const progressTab = document.getElementById('pd-tab-progress');
+        if (progressTab && progressTab.classList.contains('active')) {
+            loadProgressData(patientId, true);
+        }
+    }, 30000);
+}
+
+export function stopProgressPolling() {
+    if (progressPollingTimer) {
+        clearInterval(progressPollingTimer);
+        progressPollingTimer = null;
+    }
+}
+
+async function loadProgressData(patientId, silent = false) {
+    try {
+        const [summary, checkins, workouts, chartData] = await Promise.all([
+            fetchPatientProgress(patientId),
+            fetchPatientCheckins(patientId, 10),
+            fetchPatientWorkouts(patientId, 10),
+            fetchPatientChartData(patientId, 7),
+        ]);
+
+        renderProgressSummary(summary);
+        renderPainChart(chartData.pain);
+        renderWorkoutChart(chartData.workouts);
+        renderCheckinsList(checkins);
+        renderWorkoutsList(workouts);
+
+        const syncEl = document.getElementById('progress-last-sync');
+        if (syncEl) {
+            syncEl.textContent = summary.last_sync
+                ? `마지막 동기화: ${new Date(summary.last_sync).toLocaleString('ko-KR', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}`
+                : '';
+        }
+    } catch (e) {
+        if (!silent) {
+            const summaryEl = document.getElementById('progress-summary');
+            if (summaryEl) summaryEl.innerHTML = '<div class="empty-state"><p>진행 기록을 불러올 수 없습니다. 환자가 앱에 연결되지 않았을 수 있습니다.</p></div>';
+        }
+    }
+}
+
+function renderProgressSummary(summary) {
+    const el = document.getElementById('progress-summary');
+    if (!el) return;
+
+    el.innerHTML = `
+        <div class="progress-card">
+            <div class="progress-card-value">${summary.total_checkins}</div>
+            <div class="progress-card-label">총 체크인</div>
+        </div>
+        <div class="progress-card">
+            <div class="progress-card-value">${summary.total_workouts}</div>
+            <div class="progress-card-label">총 운동</div>
+        </div>
+        <div class="progress-card">
+            <div class="progress-card-value">${summary.avg_pain_7d != null ? summary.avg_pain_7d : '-'}</div>
+            <div class="progress-card-label">7일 평균 통증</div>
+        </div>
+        <div class="progress-card">
+            <div class="progress-card-value">${summary.completion_rate_7d != null ? summary.completion_rate_7d + '%' : '-'}</div>
+            <div class="progress-card-label">7일 완수율</div>
+        </div>
+    `;
+}
+
+function renderPainChart(painData) {
+    const canvas = document.getElementById('progress-pain-chart');
+    if (!canvas) return;
+
+    if (painChartInstance) painChartInstance.destroy();
+
+    // Group by region
+    const byRegion = {};
+    for (const p of painData) {
+        if (!byRegion[p.region_key]) byRegion[p.region_key] = [];
+        byRegion[p.region_key].push(p);
+    }
+
+    const colors = ['#4A90D9', '#E74C3C', '#2ECC71', '#F39C12', '#9B59B6'];
+    const datasets = Object.keys(byRegion).map((region, idx) => ({
+        label: REGION_LABELS[region] || region,
+        data: byRegion[region].map(p => ({ x: p.date, y: p.pain_level })),
+        borderColor: colors[idx % colors.length],
+        backgroundColor: colors[idx % colors.length] + '20',
+        tension: 0.3,
+        fill: false,
+        pointRadius: 4,
+    }));
+
+    painChartInstance = new Chart(canvas, {
+        type: 'line',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+            scales: {
+                x: { type: 'category', labels: [...new Set(painData.map(p => p.date))].sort() },
+                y: { min: 0, max: 10, title: { display: true, text: '통증 수준' } },
+            },
+        },
+    });
+}
+
+function renderWorkoutChart(workoutData) {
+    const canvas = document.getElementById('progress-workout-chart');
+    if (!canvas) return;
+
+    if (workoutChartInstance) workoutChartInstance.destroy();
+
+    const rpeColors = { easy: '#2ECC71', moderate: '#F39C12', hard: '#E74C3C' };
+
+    workoutChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: workoutData.map(w => w.date),
+            datasets: [{
+                label: '운동 시간 (분)',
+                data: workoutData.map(w => Math.round(w.duration / 60)),
+                backgroundColor: workoutData.map(w => rpeColors[w.rpe] || '#4A90D9'),
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: '분' } },
+            },
+        },
+    });
+}
+
+function renderCheckinsList(checkins) {
+    const el = document.getElementById('progress-checkins-list');
+    if (!el) return;
+
+    if (!checkins.length) {
+        el.innerHTML = '<div class="empty-state"><p>체크인 기록이 없습니다.</p></div>';
+        return;
+    }
+
+    el.innerHTML = checkins.map(c => {
+        const date = new Date(c.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' });
+        const dur = c.total_duration ? Math.round(c.total_duration / 60) + '분' : '-';
+        const exercises = c.exercises_completed || [];
+        return `
+            <div class="progress-item">
+                <div class="progress-item-date">${date}</div>
+                <div class="progress-item-details">
+                    <span class="progress-pain">통증 ${c.pre_pain_score ?? '-'} → ${c.post_pain_score ?? '-'}</span>
+                    <span class="progress-rpe">${RPE_LABELS[c.rpe] || c.rpe || '-'}</span>
+                    <span class="progress-duration">${dur}</span>
+                </div>
+                <div class="progress-item-exercises">${exercises.join(', ') || '-'}</div>
+            </div>`;
+    }).join('');
+}
+
+function renderWorkoutsList(workouts) {
+    const el = document.getElementById('progress-workouts-list');
+    if (!el) return;
+
+    if (!workouts.length) {
+        el.innerHTML = '<div class="empty-state"><p>운동 세션 기록이 없습니다.</p></div>';
+        return;
+    }
+
+    el.innerHTML = workouts.map(w => {
+        const date = new Date(w.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' });
+        const dur = Math.round(w.duration / 60) + '분';
+        const exercises = (w.exercises || []).map(e => e.name || e).join(', ');
+        return `
+            <div class="progress-item">
+                <div class="progress-item-date">${date}</div>
+                <div class="progress-item-details">
+                    <span class="progress-rpe">${RPE_LABELS[w.rpe] || w.rpe || '-'}</span>
+                    <span class="progress-duration">${dur}</span>
+                </div>
+                <div class="progress-item-exercises">${exercises || '-'}</div>
+            </div>`;
+    }).join('');
 }
 
 // Forward aliases (new naming convention)

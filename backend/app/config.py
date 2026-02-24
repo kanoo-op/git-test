@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@postureview.local"
 
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost", "http://localhost:8080"]
+    CORS_ORIGINS: List[str] = ["http://localhost", "http://localhost:8080", "http://localhost:4000", "http://localhost:4001", "http://localhost:4002"]
 
     # Rate limiting
     LOGIN_RATE_LIMIT: str = "10/minute"

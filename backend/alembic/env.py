@@ -15,6 +15,10 @@ from app.models.assessment import Assessment, Selection  # noqa
 from app.models.photo import PosturePhoto  # noqa
 from app.models.mapping import Mapping, MeshName  # noqa
 from app.models.audit import AuditLog  # noqa
+from app.models.portal import (  # noqa
+    PatientInvite, PatientLink, PrescribedProgram,
+    PatientCheckin, PatientWorkoutSession, PatientPainLog,
+)
 
 config = context.config
 

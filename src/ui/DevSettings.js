@@ -1,7 +1,8 @@
 // DevSettings.js - 개발자 설정 모듈 (매핑 UI 등 개발용 기능)
 
 import { loadMapping, clearMapping, getMappingInfo } from '../anatomy/Regions.js';
-import { saveMapping, getMapping, clearMappingData, getNaverApiSettings, setNaverApiSettings } from '../services/Storage.js';
+import { saveMapping, getMapping, clearMappingData } from '../services/Storage.js';
+import * as api from '../services/Api.js';
 
 /**
  * 개발자 설정 초기화
@@ -25,7 +26,7 @@ export function initDevSettings() {
 
     // Init mapping UI within dev settings
     initDevMappingUI();
-    initNaverApiSettings();
+    initProfileSettings();
 }
 
 /**
@@ -36,6 +37,7 @@ export function openDevSettings() {
     if (overlay) {
         overlay.style.display = 'flex';
         renderDevMappingStatus();
+        loadProfileName();
     }
 }
 
@@ -148,45 +150,63 @@ export function renderDevMappingStatus() {
     }
 }
 
-// ======== Naver API Settings ========
+// ======== Profile Settings ========
 
-function initNaverApiSettings() {
-    const clientIdInput = document.getElementById('naver-client-id-input');
-    const clientSecretInput = document.getElementById('naver-client-secret-input');
-    const saveBtn = document.getElementById('btn-save-naver-api');
-
-    const settings = getNaverApiSettings();
-    if (settings) {
-        if (clientIdInput) clientIdInput.value = settings.clientId || '';
-        if (clientSecretInput) clientSecretInput.value = settings.clientSecret || '';
-    }
-    updateNaverApiStatus();
-
-    if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-            const clientId = (clientIdInput?.value || '').trim();
-            if (!clientId) {
-                window.showToast?.('Client ID를 입력하세요.', 'warning');
-                return;
-            }
-            setNaverApiSettings(clientId, (clientSecretInput?.value || '').trim());
-            updateNaverApiStatus();
-            window.showToast?.('네이버 API 설정이 저장되었습니다.', 'success');
-        });
-    }
+function loadProfileName() {
+    const input = document.getElementById('profile-name-input');
+    if (!input) return;
+    const user = api.getCurrentUser();
+    if (user) input.value = user.full_name || '';
 }
 
-function updateNaverApiStatus() {
-    const statusEl = document.getElementById('naver-api-status');
-    const statusText = document.getElementById('naver-api-status-text');
-    if (!statusEl || !statusText) return;
+function initProfileSettings() {
+    const saveBtn = document.getElementById('btn-save-profile');
+    const input = document.getElementById('profile-name-input');
+    if (!saveBtn || !input) return;
 
-    const settings = getNaverApiSettings();
-    if (settings && settings.clientId) {
-        statusEl.style.color = 'var(--status-normal)';
-        statusText.textContent = '설정됨';
-    } else {
-        statusEl.style.color = 'var(--text-tertiary)';
-        statusText.textContent = '미설정';
-    }
+    loadProfileName();
+
+    saveBtn.addEventListener('click', async () => {
+        const newName = input.value.trim();
+        if (!newName) {
+            window.showToast?.('이름을 입력하세요.', 'warning');
+            return;
+        }
+
+        const user = api.getCurrentUser();
+        if (!user) return;
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = '저장 중...';
+        const statusEl = document.getElementById('profile-save-status');
+
+        try {
+            await api.updateUser(user.id, { full_name: newName });
+
+            // Update local user data
+            user.full_name = newName;
+            api.setCurrentUser(user);
+
+            // Update sidebar display
+            const nameEl = document.getElementById('user-display-name');
+            if (nameEl) nameEl.textContent = newName;
+
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--status-normal)';
+                statusEl.textContent = '이름이 변경되었습니다.';
+                setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+            }
+            window.showToast?.('이름이 변경되었습니다.', 'success');
+        } catch (err) {
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = 'var(--status-severe)';
+                statusEl.textContent = err.message || '변경 실패';
+            }
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '이름 변경';
+        }
+    });
 }

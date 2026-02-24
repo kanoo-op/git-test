@@ -45,20 +45,6 @@
     <!-- Skip Link (Accessibility) -->
     <a href="#app" class="skip-link">메인 콘텐츠로 건너뛰기</a>
 
-    <!-- PIN Lock Overlay -->
-    <div id="pin-overlay" class="pin-overlay" style="display:none;">
-        <div class="pin-card">
-            <h2>PostureView</h2>
-            <p>환자 데이터 보호를 위해 PIN을 입력하세요</p>
-            <input type="password" id="pin-input" class="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="off">
-            <div class="pin-error" id="pin-error"></div>
-            <div class="pin-actions">
-                <button id="btn-pin-submit" class="btn-primary">확인</button>
-                <button id="btn-pin-setup" class="btn-secondary" style="display:none;">PIN 설정</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Login Overlay -->
     <div id="login-overlay" class="login-overlay" style="display:none;">
         <div class="login-card">
@@ -132,7 +118,7 @@
                     </button>
                     <div class="nav-group-items">
                         <button class="nav-item" data-view="posture"><span>자세분석</span></button>
-                        <button class="nav-item" data-view="viewer"><span>3D 해부 뷰어</span></button>
+                        <button class="nav-item" data-view="viewer"><span>3D 뷰어</span></button>
                     </div>
                 </div>
 
@@ -148,19 +134,7 @@
                     </div>
                 </div>
 
-                <!-- Group 5: 운동처방 -->
-                <div class="nav-group" data-group="exercise">
-                    <button class="nav-group-header" aria-expanded="true">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M6 8H5a4 4 0 000 8h1"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
-                        <span>운동처방</span>
-                        <svg class="nav-group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    <div class="nav-group-items">
-                        <button class="nav-item" data-view="exercise"><span>운동 라이브러리</span></button>
-                    </div>
-                </div>
-
-                <!-- Group 6: 리포트/출력 -->
+                <!-- Group 5: 리포트/출력 -->
                 <div class="nav-group" data-group="reports">
                     <button class="nav-group-header" aria-expanded="true">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
@@ -172,18 +146,6 @@
                     </div>
                 </div>
 
-                <!-- Group 7: 레퍼런스 -->
-                <div class="nav-group" data-group="reference">
-                    <button class="nav-group-header" aria-expanded="true">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <span>레퍼런스</span>
-                        <svg class="nav-group-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    <div class="nav-group-items">
-                        <button class="nav-item" data-view="disease-search"><span>질환/해부 검색</span></button>
-                        <button class="nav-item" data-view="therapy-centers"><span>주변 재활병원</span></button>
-                    </div>
-                </div>
             </nav>
 
             <!-- Patient Card -->
@@ -197,15 +159,11 @@
 
             <!-- User Info Section -->
             <div id="user-info-section" class="user-info-section" style="display:none;">
-                <div class="section-label">사용자</div>
                 <div class="user-info-display">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     <span id="user-display-name" class="user-display-name">-</span>
                     <span id="user-display-role" class="user-display-role">-</span>
                 </div>
-                <button id="btn-logout" class="footer-btn btn-logout" title="로그아웃">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    로그아웃
-                </button>
             </div>
 
             <div class="sidebar-footer">
@@ -225,6 +183,10 @@
                 <button id="btn-open-dev-settings" class="footer-btn" title="개발자 설정">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                     설정
+                </button>
+                <button id="btn-logout" class="footer-btn btn-logout" title="로그아웃" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    로그아웃
                 </button>
             </div>
         </aside>
@@ -571,8 +533,10 @@
                             <button id="btn-edit-patient-detail" class="btn-secondary btn-sm-pad">수정</button>
                             <button id="btn-export-patient" class="btn-secondary btn-sm-pad">내보내기</button>
                             <button id="btn-print-patient" class="btn-secondary btn-sm-pad">인쇄</button>
+                            <button id="btn-generate-invite" class="btn-primary btn-sm-pad">초대 코드 생성</button>
                         </div>
                     </div>
+                    <div id="pd-invite-section" class="pd-invite-section" style="display:none;"></div>
                     <div class="pd-info-grid" id="pd-info-grid"></div>
                 </div>
                 <div class="pd-stats" id="pd-stats"></div>
@@ -581,6 +545,7 @@
                 <div class="pd-tabs" id="pd-tabs">
                     <button class="pd-tab active" data-pd-tab="visits">내원 기록</button>
                     <button class="pd-tab" data-pd-tab="soap">SOAP 기록</button>
+                    <button class="pd-tab" data-pd-tab="progress">진행 기록</button>
                 </div>
 
                 <!-- Tab: 내원 기록 -->
@@ -746,27 +711,50 @@
 
                     <div id="pd-soap-list"></div>
                 </div>
+
+                <!-- Tab: 진행 기록 (환자 앱 연동) -->
+                <div class="pd-tab-content" id="pd-tab-progress">
+                    <div class="progress-header">
+                        <h3>환자 앱 진행 기록</h3>
+                        <div class="progress-actions">
+                            <span id="progress-last-sync" class="progress-sync-time"></span>
+                            <button id="btn-refresh-progress" class="btn-secondary btn-sm-pad">새로고침</button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div id="progress-summary" class="progress-summary-cards"></div>
+
+                    <!-- Pain Chart -->
+                    <div class="progress-chart-section">
+                        <h4>통증 추이 (7일)</h4>
+                        <div class="progress-chart-container">
+                            <canvas id="progress-pain-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Workout Chart -->
+                    <div class="progress-chart-section">
+                        <h4>운동 시간 (7일)</h4>
+                        <div class="progress-chart-container">
+                            <canvas id="progress-workout-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Recent Checkins -->
+                    <div class="progress-list-section">
+                        <h4>최근 체크인</h4>
+                        <div id="progress-checkins-list" class="progress-list"></div>
+                    </div>
+
+                    <!-- Recent Workouts -->
+                    <div class="progress-list-section">
+                        <h4>최근 운동 세션</h4>
+                        <div id="progress-workouts-list" class="progress-list"></div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Disease Search View -->
-            <div id="disease-search-view" class="panel-view" style="display:none;">
-                <div class="panel-header">
-                    <h2>질환 검색</h2>
-                </div>
-                <div class="disease-search-bar">
-                    <div class="disease-search-input-wrap">
-                        <svg class="disease-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="text" id="disease-search-input" class="disease-search-input" placeholder="질환명, 근육명, 부위명으로 검색..." autocomplete="off">
-                    </div>
-                    <p class="disease-search-hint">예: 디스크, 오십견, 족저근막염, 삼각근, 허리</p>
-                </div>
-                <div id="disease-search-results" class="disease-search-results">
-                    <div class="disease-search-empty">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <p>검색어를 입력하면 관련 질환, 근육, 부위가 표시됩니다.</p>
-                    </div>
-                </div>
-            </div>
 
             <!-- (pose-dashboard-view removed - integrated into posture-analysis-view tabs) -->
 
@@ -1140,38 +1128,6 @@
                 <div id="soap-records-list" class="soap-records-list"></div>
             </div>
 
-            <!-- Exercise View -->
-            <div id="exercise-view" class="panel-view" style="display:none;">
-                <div class="panel-header">
-                    <h2>운동 처방</h2>
-                    <span id="ex-lib-result-count" class="panel-header-count"></span>
-                </div>
-                <div class="ex-lib-toolbar">
-                    <div class="ex-lib-search-wrap">
-                        <svg class="ex-lib-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                        </svg>
-                        <input id="ex-lib-search" type="text" placeholder="운동명, 부위, 질환 검색..." />
-                    </div>
-                    <div class="ex-lib-diff-group">
-                        <button class="ex-diff-btn active" data-diff="all">전체</button>
-                        <button class="ex-diff-btn" data-diff="쉬움">쉬움</button>
-                        <button class="ex-diff-btn" data-diff="보통">보통</button>
-                        <button class="ex-diff-btn" data-diff="어려움">어려움</button>
-                    </div>
-                </div>
-                <div id="ex-lib-tag-filters" class="ex-tag-filters"></div>
-                <div class="exercise-layout">
-                    <div class="exercise-sidebar">
-                        <div class="exercise-category-title">부위별 카테고리</div>
-                        <div id="ex-lib-categories" class="exercise-categories"></div>
-                    </div>
-                    <div class="exercise-main">
-                        <div id="ex-lib-grid" class="ex-lib-grid"></div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Reports View -->
             <div id="reports-view" class="panel-view" style="display:none;">
                 <div class="panel-header">
@@ -1219,79 +1175,6 @@
 
                 <!-- Report Detail Panel -->
                 <div id="rpt-detail" class="rpt-detail"></div>
-            </div>
-
-            <!-- Therapy Centers View -->
-            <div id="therapy-centers-view" class="panel-view" style="display:none;">
-                <div class="panel-header">
-                    <h2>주변 재활병원</h2>
-                    <button id="therapy-refresh-btn" class="btn-secondary btn-sm-pad">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                        새로고침
-                    </button>
-                </div>
-
-                <!-- Setup Notice -->
-                <div id="therapy-setup-notice" class="therapy-setup-notice" style="display:none;">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    <h3>네이버 API 설정 필요</h3>
-                    <p>지도와 장소 검색을 사용하려면 네이버 클라우드 플랫폼에서<br>Client ID와 Client Secret을 발급받아 설정하세요.</p>
-                    <button id="therapy-open-settings-btn" class="btn-primary">설정 열기</button>
-                    <div class="therapy-setup-steps">
-                        <h4>API 키 발급 방법</h4>
-                        <ol>
-                            <li>네이버 클라우드 플랫폼 (ncloud.com) 가입</li>
-                            <li>Console → Application → Application 등록</li>
-                            <li>Maps (Web Dynamic Map) 및 검색 (지역) API 선택</li>
-                            <li>Client ID와 Client Secret 복사</li>
-                            <li>개발자 설정 → 네이버 API 설정에 입력</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <!-- Main Content -->
-                <div id="therapy-main-content" class="therapy-main-content" style="display:none;">
-                    <div class="therapy-layout">
-                        <!-- Left: Search + Results -->
-                        <div class="therapy-left-panel">
-                            <div class="therapy-search-controls">
-                                <div class="therapy-search-bar">
-                                    <input type="text" id="therapy-search-input" class="therapy-input" placeholder="주변 재활병원 검색 (예: 물리치료, 재활의학과)" value="재활병원">
-                                    <button id="therapy-search-btn" class="therapy-search-icon-btn" title="검색">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                                    </button>
-                                </div>
-                                <div class="therapy-sub-controls">
-                                    <button id="therapy-use-location-btn" class="therapy-location-btn" title="내 위치 기반 검색">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-                                        내 위치
-                                    </button>
-                                    <div id="therapy-current-location" class="therapy-current-location" style="display:none;">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>
-                                        <span id="therapy-location-text">-</span>
-                                        <button id="therapy-clear-location-btn" class="therapy-clear-loc-btn" title="위치 해제">&times;</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="therapy-loading" class="therapy-loading" style="display:none;">
-                                <div class="therapy-spinner"></div>
-                                <span>검색 중...</span>
-                            </div>
-                            <div id="therapy-error" class="therapy-error" style="display:none;"></div>
-                            <div id="therapy-results-list" class="therapy-results-list"></div>
-                            <div id="therapy-empty" class="therapy-empty" style="display:none;">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                                <p>검색 결과가 없습니다</p>
-                            </div>
-                        </div>
-                        <!-- Right: Map -->
-                        <div class="therapy-map-panel">
-                            <div id="therapy-map-container" class="therapy-map-container">
-                                <div id="therapy-naver-map" style="width:100%;height:100%;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Mapping Editor (right panel overlaying viewer) -->
@@ -1529,22 +1412,13 @@
                 </div>
 
                 <div class="dev-settings-section">
-                    <div class="section-label">네이버 API 설정</div>
-                    <p class="settings-desc">지도 및 장소 검색 기능에 사용됩니다</p>
+                    <div class="section-label">내 프로필</div>
                     <div class="form-group">
-                        <label>Client ID</label>
-                        <input type="text" id="naver-client-id-input" class="dev-settings-input" placeholder="네이버 클라우드 Client ID">
+                        <label>이름</label>
+                        <input type="text" id="profile-name-input" class="dev-settings-input" placeholder="이름을 입력하세요">
                     </div>
-                    <div class="form-group">
-                        <label>Client Secret</label>
-                        <input type="password" id="naver-client-secret-input" class="dev-settings-input" placeholder="검색 API용 Client Secret">
-                        <small style="color:var(--text-tertiary);display:block;margin-top:4px;">백엔드 .env에서도 설정 가능</small>
-                    </div>
-                    <div id="naver-api-status" class="naver-api-status">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        <span id="naver-api-status-text">미설정</span>
-                    </div>
-                    <button id="btn-save-naver-api" class="btn-primary" style="width:100%;margin-top:8px;">저장</button>
+                    <div id="profile-save-status" class="profile-save-status" style="display:none;"></div>
+                    <button id="btn-save-profile" class="btn-primary" style="width:100%;margin-top:8px;">이름 변경</button>
                 </div>
             </div>
         </div>

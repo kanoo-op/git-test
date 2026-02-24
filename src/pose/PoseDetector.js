@@ -196,10 +196,11 @@ function detectViewType(lm, wlm, useWorld) {
 }
 
 function calcForwardHeadAngle(lm, wlm, useWorld) {
-    const earL = useWorld ? wlm[LM.LEFT_EAR] : lm[LM.LEFT_EAR];
-    const shoulderL = useWorld ? wlm[LM.LEFT_SHOULDER] : lm[LM.LEFT_SHOULDER];
-    const earR = useWorld ? wlm[LM.RIGHT_EAR] : lm[LM.RIGHT_EAR];
-    const shoulderR = useWorld ? wlm[LM.RIGHT_SHOULDER] : lm[LM.RIGHT_SHOULDER];
+    // normalized landmarks 사용 (좌/우 평균으로 편향 상쇄, 일관성을 위해 통일)
+    const earL = lm[LM.LEFT_EAR];
+    const shoulderL = lm[LM.LEFT_SHOULDER];
+    const earR = lm[LM.RIGHT_EAR];
+    const shoulderR = lm[LM.RIGHT_SHOULDER];
 
     const angleL = calcAngleFromVertical(earL, shoulderL);
     const angleR = calcAngleFromVertical(earR, shoulderR);
@@ -212,26 +213,20 @@ function calcForwardHeadAngle(lm, wlm, useWorld) {
 }
 
 function calcShoulderLevelDiff(lm, wlm, useWorld, imgH) {
-    // 단순 계산: 왼쪽 어깨 Y - 오른쪽 어깨 Y 좌표 차이
-    const shoulderL = useWorld ? wlm[LM.LEFT_SHOULDER] : lm[LM.LEFT_SHOULDER];
-    const shoulderR = useWorld ? wlm[LM.RIGHT_SHOULDER] : lm[LM.RIGHT_SHOULDER];
+    // 항상 normalized landmarks 사용 (이미지 기반 좌표)
+    // worldLandmarks Y값은 3D 추정 편향으로 좌우 어깨에 일정한 오차가 있어 부정확
+    const shoulderL = lm[LM.LEFT_SHOULDER];
+    const shoulderR = lm[LM.RIGHT_SHOULDER];
 
-    let diff;
-    if (useWorld) {
-        // world landmarks: 미터 단위 → cm 변환
-        diff = Math.abs(shoulderL.y - shoulderR.y) * 100;
-    } else {
-        // normalized landmarks (0~1): Y차이 × 이미지 높이 = 픽셀차,
-        // 어깨~발목 높이를 약 140cm로 추정하여 cm 환산
-        const ankleY = Math.max(
-            lm[LM.LEFT_ANKLE]?.y || 0,
-            lm[LM.RIGHT_ANKLE]?.y || 0
-        );
-        const shoulderMidY = (lm[LM.LEFT_SHOULDER].y + lm[LM.RIGHT_SHOULDER].y) / 2;
-        const bodySpan = Math.abs(ankleY - shoulderMidY);
-        const cmPerUnit = bodySpan > 0.01 ? (140 / bodySpan) : (imgH * 0.5);
-        diff = Math.abs(shoulderL.y - shoulderR.y) * cmPerUnit;
-    }
+    // normalized landmarks (0~1): 어깨~발목 높이를 약 140cm로 추정하여 cm 환산
+    const ankleY = Math.max(
+        lm[LM.LEFT_ANKLE]?.y || 0,
+        lm[LM.RIGHT_ANKLE]?.y || 0
+    );
+    const shoulderMidY = (shoulderL.y + shoulderR.y) / 2;
+    const bodySpan = Math.abs(ankleY - shoulderMidY);
+    const cmPerUnit = bodySpan > 0.01 ? (140 / bodySpan) : (imgH * 0.5);
+    const diff = Math.abs(shoulderL.y - shoulderR.y) * cmPerUnit;
 
     // 임상 기준: 1.5cm 미만 정상, 1.5-3cm 경도, 3-5cm 중등도, 5cm+ 중증
     const severity = classifySeverity(diff, 1.5, 3, 5);
@@ -243,8 +238,10 @@ function calcShoulderLevelDiff(lm, wlm, useWorld, imgH) {
 }
 
 function calcPelvicTilt(lm, wlm, useWorld) {
-    const hipL = useWorld ? wlm[LM.LEFT_HIP] : lm[LM.LEFT_HIP];
-    const hipR = useWorld ? wlm[LM.RIGHT_HIP] : lm[LM.RIGHT_HIP];
+    // 항상 normalized landmarks 사용 (이미지 기반 좌표)
+    // worldLandmarks Y값은 좌/우 hip에 체계적 편향이 있어 거짓 기울기 발생
+    const hipL = lm[LM.LEFT_HIP];
+    const hipR = lm[LM.RIGHT_HIP];
 
     const dx = Math.abs(hipL.x - hipR.x);
     const dy = hipL.y - hipR.y;
@@ -258,11 +255,11 @@ function calcPelvicTilt(lm, wlm, useWorld) {
 }
 
 function calcTrunkLateralTilt(lm, wlm, useWorld) {
-    const nose = useWorld ? wlm[LM.NOSE] : lm[LM.NOSE];
-    const hipL = useWorld ? wlm[LM.LEFT_HIP] : lm[LM.LEFT_HIP];
-    const hipR = useWorld ? wlm[LM.RIGHT_HIP] : lm[LM.RIGHT_HIP];
-    const shoulderL = useWorld ? wlm[LM.LEFT_SHOULDER] : lm[LM.LEFT_SHOULDER];
-    const shoulderR = useWorld ? wlm[LM.RIGHT_SHOULDER] : lm[LM.RIGHT_SHOULDER];
+    // normalized landmarks 사용 (midpoint 평균으로 편향이 상쇄되지만 일관성을 위해 통일)
+    const hipL = lm[LM.LEFT_HIP];
+    const hipR = lm[LM.RIGHT_HIP];
+    const shoulderL = lm[LM.LEFT_SHOULDER];
+    const shoulderR = lm[LM.RIGHT_SHOULDER];
 
     const hipMidX = (hipL.x + hipR.x) / 2;
     const shoulderMidX = (shoulderL.x + shoulderR.x) / 2;
@@ -283,10 +280,12 @@ function calcTrunkLateralTilt(lm, wlm, useWorld) {
 }
 
 function calcKneeAlignment(lm, wlm, useWorld) {
+    // 항상 normalized landmarks 사용 (이미지 기반 좌표)
+    // worldLandmarks X값은 관절별 편향이 불균등하여 거짓 양성 가능
     function kneeAngle(hipIdx, kneeIdx, ankleIdx) {
-        const hip = useWorld ? wlm[hipIdx] : lm[hipIdx];
-        const knee = useWorld ? wlm[kneeIdx] : lm[kneeIdx];
-        const ankle = useWorld ? wlm[ankleIdx] : lm[ankleIdx];
+        const hip = lm[hipIdx];
+        const knee = lm[kneeIdx];
+        const ankle = lm[ankleIdx];
 
         const hipToKneeX = knee.x - hip.x;
         const kneeToAnkleX = ankle.x - knee.x;
@@ -297,7 +296,7 @@ function calcKneeAlignment(lm, wlm, useWorld) {
     const leftDev = kneeAngle(LM.LEFT_HIP, LM.LEFT_KNEE, LM.LEFT_ANKLE);
     const rightDev = kneeAngle(LM.RIGHT_HIP, LM.RIGHT_KNEE, LM.RIGHT_ANKLE);
 
-    const threshold = useWorld ? 0.02 : 0.015;
+    const threshold = 0.015;
 
     function classify(dev, side) {
         const absDev = Math.abs(dev);
@@ -320,12 +319,14 @@ function calcKneeAlignment(lm, wlm, useWorld) {
 }
 
 function calcUpperBackKyphosis(lm, wlm, useWorld) {
-    const earL = useWorld ? wlm[LM.LEFT_EAR] : lm[LM.LEFT_EAR];
-    const earR = useWorld ? wlm[LM.RIGHT_EAR] : lm[LM.RIGHT_EAR];
-    const shoulderL = useWorld ? wlm[LM.LEFT_SHOULDER] : lm[LM.LEFT_SHOULDER];
-    const shoulderR = useWorld ? wlm[LM.RIGHT_SHOULDER] : lm[LM.RIGHT_SHOULDER];
-    const hipL = useWorld ? wlm[LM.LEFT_HIP] : lm[LM.LEFT_HIP];
-    const hipR = useWorld ? wlm[LM.RIGHT_HIP] : lm[LM.RIGHT_HIP];
+    // 항상 normalized landmarks 사용 (이미지 기반 좌표)
+    // worldLandmarks Z축(깊이) 추정은 불안정하여 거짓 양성 발생 가능
+    const earL = lm[LM.LEFT_EAR];
+    const earR = lm[LM.RIGHT_EAR];
+    const shoulderL = lm[LM.LEFT_SHOULDER];
+    const shoulderR = lm[LM.RIGHT_SHOULDER];
+    const hipL = lm[LM.LEFT_HIP];
+    const hipR = lm[LM.RIGHT_HIP];
 
     const earMidY = (earL.y + earR.y) / 2;
     const shoulderMidY = (shoulderL.y + shoulderR.y) / 2;
@@ -334,29 +335,20 @@ function calcUpperBackKyphosis(lm, wlm, useWorld) {
     const spineLen = Math.abs(shoulderMidY - hipMidY);
     if (spineLen < 0.001) return { value: 0, unit: '', severity: 'normal', label: '상부 등 굽힘' };
 
-    if (useWorld && wlm[LM.LEFT_EAR].z !== undefined) {
-        const earMidZ = (earL.z + earR.z) / 2;
-        const shoulderMidZ = (shoulderL.z + shoulderR.z) / 2;
-        const forwardShift = Math.abs(earMidZ - shoulderMidZ);
-        const ratio = forwardShift / spineLen;
-        const isExcessive = ratio > 0.15;
-        return {
-            value: Math.round(ratio * 100),
-            unit: '%',
-            severity: isExcessive ? 'moderate' : 'normal',
-            label: '상부 등 굽힘',
-        };
-    }
+    // 측면 뷰: 귀-어깨 X축 거리(전방 이동)를 척추 길이 대비 비율로 판단
+    const earMidX = (earL.x + earR.x) / 2;
+    const shoulderMidX = (shoulderL.x + shoulderR.x) / 2;
+    const forwardShift = Math.abs(earMidX - shoulderMidX);
+    const ratio = forwardShift / spineLen;
 
-    const headDrop = Math.abs(earMidY - shoulderMidY);
-    const ratio = headDrop / spineLen;
-    const isExcessive = ratio < 0.25;
+    // 측면에서 귀가 어깨보다 많이 앞으로 나온 경우 과도한 굽힘
+    const isExcessive = ratio > 0.15;
+
     return {
-        value: isExcessive ? 1 : 0,
-        unit: '',
+        value: Math.round(ratio * 100),
+        unit: '%',
         severity: isExcessive ? 'moderate' : 'normal',
         label: '상부 등 굽힘',
-        description: isExcessive ? '과도한 굽힘 추정' : '정상 범위',
     };
 }
 

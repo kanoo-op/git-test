@@ -160,11 +160,8 @@ export function switchView(view) {
     document.getElementById('patient-detail-view').style.display = 'none';
     document.getElementById('mapping-editor').style.display = 'none';
     document.getElementById('posture-analysis-view').style.display = 'none';
-    document.getElementById('disease-search-view').style.display = 'none';
     document.getElementById('soap-records-view').style.display = 'none';
-    document.getElementById('exercise-view').style.display = 'none';
     document.getElementById('reports-view').style.display = 'none';
-    document.getElementById('therapy-centers-view').style.display = 'none';
 
     mappingEditorActive = false;
 
@@ -189,23 +186,13 @@ export function switchView(view) {
             updatePosturePatientBar();
             if (window._refreshDashboardCharts) window._refreshDashboardCharts();
             break;
-        case 'disease-search':
-            document.getElementById('disease-search-view').style.display = 'block';
-            break;
         case 'soap-records':
             document.getElementById('soap-records-view').style.display = 'block';
             renderSoapRecordsView();
             break;
-        case 'exercise':
-            document.getElementById('exercise-view').style.display = 'block';
-            break;
         case 'reports':
             document.getElementById('reports-view').style.display = 'block';
             refreshReportPanel();
-            break;
-        case 'therapy-centers':
-            document.getElementById('therapy-centers-view').style.display = 'block';
-            if (window._activateTherapyCentersView) window._activateTherapyCentersView();
             break;
         case 'mapping':
             document.getElementById('viewer-container').style.display = 'block';

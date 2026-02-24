@@ -2,6 +2,7 @@
 // Replaces PIN-based auth with JWT login/session management
 
 import * as api from './Api.js';
+import * as storage from './Storage.js';
 
 let onAuthSuccess = null;
 
@@ -76,10 +77,11 @@ export function initAuth(onSuccess) {
     // Check for existing valid session
     if (api.isLoggedIn()) {
         // Verify token is still valid
-        api.getMe().then(user => {
+        api.getMe().then(async user => {
             api.setCurrentUser(user);
             updateUserDisplay(user);
             startActivityMonitor();
+            await syncPatientsFromServer();
             if (onAuthSuccess) onAuthSuccess();
         }).catch(() => {
             // Token invalid, show login
@@ -96,6 +98,14 @@ export function initAuth(onSuccess) {
 export function showLoginOverlay(message = '') {
     const overlay = document.getElementById('login-overlay');
     if (!overlay) return;
+
+    // Hide loading overlay so login screen is visible
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) loadingOverlay.classList.add('fade-out');
+
+    // Hide app behind login
+    const app = document.getElementById('app');
+    if (app) app.style.display = 'none';
 
     overlay.style.display = 'flex';
     const errorEl = document.getElementById('login-error');
@@ -154,6 +164,7 @@ async function handleLogin() {
 
         updateUserDisplay(data.user);
         startActivityMonitor();
+        await syncPatientsFromServer();
 
         if (onAuthSuccess) onAuthSuccess();
     } catch (err) {
@@ -166,11 +177,53 @@ async function handleLogin() {
 }
 
 /**
+ * Sync patients from backend API into local Storage
+ */
+async function syncPatientsFromServer() {
+    try {
+        const result = await api.fetchPatients({ limit: 1000 });
+        const serverPatients = result.items || [];
+        const localIds = new Set(storage.getPatients().map(p => p.id));
+        let added = 0;
+
+        for (const sp of serverPatients) {
+            if (!localIds.has(sp.id)) {
+                storage.createPatient({
+                    id: sp.id,
+                    name: sp.name,
+                    dob: sp.dob || '',
+                    gender: sp.gender || '',
+                    phone: sp.phone || '',
+                    email: sp.email || '',
+                    diagnosis: sp.diagnosis || '',
+                    medicalHistory: sp.medical_history || '',
+                    occupation: sp.occupation || '',
+                    notes: sp.notes || '',
+                });
+                added++;
+            }
+        }
+        if (added > 0) {
+            console.log(`Synced ${added} patients from server`);
+        }
+    } catch (e) {
+        console.warn('Failed to sync patients from server:', e);
+    }
+}
+
+/**
  * Logout and show login screen
  */
 export async function handleLogout() {
     stopActivityMonitor();
     await api.logout();
+
+    // Hide user info & logout button
+    const userSection = document.getElementById('user-info-section');
+    if (userSection) userSection.style.display = 'none';
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) logoutBtn.style.display = 'none';
+
     showLoginOverlay('로그아웃 되었습니다.');
 }
 
@@ -193,9 +246,12 @@ function updateUserDisplay(user) {
     if (nameEl) nameEl.textContent = user.full_name || user.username;
     if (roleEl) roleEl.textContent = ROLE_LABELS[user.role] || user.role;
 
-    // Show user info section
+    // Show user info section & logout button
     const userSection = document.getElementById('user-info-section');
     if (userSection) userSection.style.display = 'block';
+
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) logoutBtn.style.display = 'flex';
 }
 
 /**

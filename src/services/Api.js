@@ -235,6 +235,52 @@ export async function exportPatient(id) {
     return request('GET', `/patients/${id}/export`);
 }
 
+// --- Invite Codes API ---
+
+export async function createInvite(patientId) {
+    return request('POST', `/patients/${patientId}/invites`);
+}
+
+export async function fetchInvites(patientId) {
+    return request('GET', `/patients/${patientId}/invites`);
+}
+
+// --- Prescriptions API ---
+
+export async function createPrescription(patientId, data) {
+    return request('POST', `/patients/${patientId}/prescriptions`, data);
+}
+
+export async function fetchPrescriptions(patientId) {
+    return request('GET', `/patients/${patientId}/prescriptions`);
+}
+
+export async function updatePrescription(patientId, programId, data) {
+    return request('PUT', `/patients/${patientId}/prescriptions/${programId}`, data);
+}
+
+export async function deletePrescription(patientId, programId) {
+    return request('DELETE', `/patients/${patientId}/prescriptions/${programId}`);
+}
+
+// --- Patient Progress API ---
+
+export async function fetchPatientProgress(patientId) {
+    return request('GET', `/patients/${patientId}/progress/summary`);
+}
+
+export async function fetchPatientCheckins(patientId, limit = 30) {
+    return request('GET', `/patients/${patientId}/progress/checkins?limit=${limit}`);
+}
+
+export async function fetchPatientWorkouts(patientId, limit = 30) {
+    return request('GET', `/patients/${patientId}/progress/workouts?limit=${limit}`);
+}
+
+export async function fetchPatientChartData(patientId, days = 30) {
+    return request('GET', `/patients/${patientId}/progress/chart-data?days=${days}`);
+}
+
 // --- Assessments (Visits) API ---
 
 export async function fetchAssessments(patientId) {

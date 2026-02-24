@@ -238,7 +238,7 @@ export function setCurrentPatient(id) {
 
 export function createPatient(patientData) {
     const patient = {
-        id: crypto.randomUUID(),
+        id: patientData.id || crypto.randomUUID(),
         name: patientData.name,
         dob: patientData.dob || '',
         gender: patientData.gender || '',
@@ -544,23 +544,6 @@ export function clearMappingData() {
     saveData(data);
 }
 
-// --- Naver API Settings (localStorage) ---
-
-const NAVER_API_KEY = 'pv_naver_api';
-
-export function getNaverApiSettings() {
-    try {
-        const stored = localStorage.getItem(NAVER_API_KEY);
-        return stored ? JSON.parse(stored) : null;
-    } catch {
-        return null;
-    }
-}
-
-export function setNaverApiSettings(clientId, clientSecret = '') {
-    localStorage.setItem(NAVER_API_KEY, JSON.stringify({ clientId, clientSecret }));
-}
-
 // --- Posture Photos (IndexedDB primary, localStorage fallback) ---
 
 const PHOTO_PREFIX = 'pv_photo_';
@@ -680,34 +663,3 @@ export function importData(jsonString) {
     return false;
 }
 
-// --- PIN / Data Protection ---
-
-const PIN_KEY = 'pv_pin_hash';
-
-export async function hashPin(pin) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(pin + 'PostureView_Salt');
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-export function hasPinSet() {
-    return !!localStorage.getItem(PIN_KEY);
-}
-
-export async function setPin(pin) {
-    const hash = await hashPin(pin);
-    localStorage.setItem(PIN_KEY, hash);
-}
-
-export async function verifyPin(pin) {
-    const stored = localStorage.getItem(PIN_KEY);
-    if (!stored) return true; // No PIN set = always pass
-    const hash = await hashPin(pin);
-    return hash === stored;
-}
-
-export function removePin() {
-    localStorage.removeItem(PIN_KEY);
-}

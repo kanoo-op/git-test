@@ -12,19 +12,16 @@ import { initPanels, switchView } from './ui/ViewRouter.js';
 import { initDevSettings } from './ui/DevSettings.js';
 import { closeContextPanel } from './ui/ContextPanel.js';
 import { setRenderMode } from './anatomy/Highlights.js';
-import { exportAllData, clearMappingData, hasPinSet, verifyPin, setPin, removePin } from './services/Storage.js';
+import { exportAllData, clearMappingData } from './services/Storage.js';
 import { initPostureUI } from './pose/PoseUI.js';
-import { initAnatomySearch, showAnatomySearch } from './anatomy/AnatomySearch.js';
 import { initRealtimePoseUI } from './pose/RealtimeUI.js';
 import { initPoseDashboard, updateDashboardFromAnalysis, refreshDashboardCharts } from './pose/PoseDashboard.js';
 import { initMultiView, setViewMode } from './core/MultiView.js';
 import { initExerciseRecPanel, hideExerciseRecommendations } from './ui/ExerciseRecommendation.js';
 import { initExerciseMode, stopExerciseMode } from './pose/ExerciseMode.js';
-import { initExerciseLibrary } from './ui/ExerciseLibrary.js';
 import { initReportPanel } from './ui/ReportPanel.js';
 import { initSoapRecordsView } from './patients/SoapRecords.js';
-import { initTherapyCenters, activateTherapyCentersView } from './ui/TherapyCenters.js';
-import { handleLogout } from './services/Auth.js';
+import { initAuth, handleLogout } from './services/Auth.js';
 
 // Toast + Video Modal (self-registering on window)
 import './ui/Toast.js';
@@ -67,15 +64,16 @@ loadModel(
     },
     // onComplete
     async (modelRoot, bounds) => {
-        // Check PIN lock before showing app
-        await initPinLock();
-
-        // Fade out loading overlay
-        loadingOverlay.classList.add('fade-out');
-        app.style.display = 'flex';
-
-        // Start render loop
+        // Start render loop (background, not visible yet)
         startRenderLoop();
+
+        // Initialize auth - shows login overlay if not authenticated
+        // App is hidden until authentication succeeds
+        initAuth(() => {
+            // Called after successful authentication — now show the app
+            loadingOverlay.classList.add('fade-out');
+            app.style.display = 'flex';
+        });
 
         // Initialize controls (selection logic lives in SelectionService)
         initControls(canvas, {
@@ -99,7 +97,6 @@ loadModel(
         }
         initPostureTabs();
         initPostureUI();
-        initAnatomySearch({ switchView: switchView });
         initRealtimePoseUI();
         initPoseDashboard();
         window._refreshDashboardCharts = refreshDashboardCharts;
@@ -107,11 +104,8 @@ loadModel(
         initMultiView(canvas, scene, camera, bounds.center);
         initExerciseRecPanel();
         initExerciseMode();
-        initExerciseLibrary();
         initReportPanel();
         initSoapRecordsView();
-        initTherapyCenters();
-        window._activateTherapyCentersView = activateTherapyCentersView;
 
         // Selection service: keyboard bindings + hover tooltip listener
         initSelectionKeyboard();
@@ -121,7 +115,6 @@ loadModel(
         initRenderModeToggle();
         initMobileMenu();
         initKeyboardShortcuts();
-        initPinManagement();
         initThemeToggle();
 
         // Default view: dashboard
@@ -254,12 +247,6 @@ function initMobileMenu() {
 
 function initKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey && e.key === 'k') || (e.key === '/' && !e.target.matches('input, textarea, select'))) {
-            e.preventDefault();
-            showAnatomySearch();
-            return;
-        }
-
         if (!e.target.matches('input, textarea, select') && !e.ctrlKey && !e.altKey && !e.metaKey) {
             if (e.key === '1') { switchViewMode('single'); return; }
             if (e.key === '2') { switchViewMode('dual'); return; }
@@ -375,122 +362,3 @@ function updateThemeLabel() {
     }
 }
 
-// ===== PIN Lock =====
-
-function initPinLock() {
-    const overlay = document.getElementById('pin-overlay');
-    const input = document.getElementById('pin-input');
-    const error = document.getElementById('pin-error');
-    const submitBtn = document.getElementById('btn-pin-submit');
-    const setupBtn = document.getElementById('btn-pin-setup');
-
-    if (!overlay) return Promise.resolve();
-
-    if (!hasPinSet()) {
-        return Promise.resolve();
-    }
-
-    return new Promise((resolve) => {
-        overlay.style.display = 'flex';
-        submitBtn.style.display = '';
-        setupBtn.style.display = 'none';
-        setTimeout(() => input.focus(), 100);
-
-        async function handleSubmit() {
-            const pin = input.value.trim();
-            if (!pin || pin.length < 4) {
-                error.textContent = '4자리 PIN을 입력하세요.';
-                input.focus();
-                return;
-            }
-            submitBtn.disabled = true;
-            try {
-                const valid = await verifyPin(pin);
-                if (valid) {
-                    overlay.style.display = 'none';
-                    resolve();
-                } else {
-                    error.textContent = 'PIN이 올바르지 않습니다.';
-                    input.value = '';
-                    input.focus();
-                }
-            } catch {
-                error.textContent = '인증 오류가 발생했습니다.';
-            }
-            submitBtn.disabled = false;
-        }
-
-        submitBtn.addEventListener('click', handleSubmit);
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') handleSubmit();
-        });
-        input.addEventListener('input', () => {
-            error.textContent = '';
-            if (input.value.trim().length >= 4) {
-                handleSubmit();
-            }
-        });
-    });
-}
-
-// ===== PIN Management =====
-
-function initPinManagement() {
-    const footer = document.querySelector('.sidebar-footer');
-    if (!footer) return;
-
-    const pinBtn = document.createElement('button');
-    pinBtn.className = 'footer-btn';
-    pinBtn.id = 'btn-pin-manage';
-    pinBtn.title = '데이터 보호 PIN 설정';
-    pinBtn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-        ${hasPinSet() ? 'PIN 변경' : 'PIN 설정'}
-    `;
-    footer.appendChild(pinBtn);
-
-    pinBtn.addEventListener('click', () => {
-        if (hasPinSet()) {
-            showPinChangeDialog(pinBtn);
-        } else {
-            showPinSetupDialog(pinBtn);
-        }
-    });
-}
-
-function showPinSetupDialog(pinBtn) {
-    const pin = prompt('새 4자리 PIN을 입력하세요 (숫자만):');
-    if (!pin) return;
-    if (!/^\d{4}$/.test(pin)) {
-        window.showToast('PIN은 4자리 숫자여야 합니다.', 'warning');
-        return;
-    }
-    const confirm2 = prompt('PIN을 다시 입력하세요:');
-    if (pin !== confirm2) {
-        window.showToast('PIN이 일치하지 않습니다.', 'error');
-        return;
-    }
-    setPin(pin).then(() => {
-        window.showToast('PIN이 설정되었습니다. 다음 접속 시 PIN 입력이 필요합니다.', 'success', 4000);
-        if (pinBtn) pinBtn.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            PIN 변경
-        `;
-    });
-}
-
-function showPinChangeDialog(pinBtn) {
-    const action = prompt('1: PIN 변경\n2: PIN 제거\n번호를 입력하세요:');
-    if (action === '1') {
-        showPinSetupDialog(pinBtn);
-    } else if (action === '2') {
-        if (confirm('PIN을 제거하면 앱 시작 시 인증 없이 접속됩니다. 계속하시겠습니까?')) {
-            removePin();
-            window.showToast('PIN이 제거되었습니다.', 'info');
-            if (pinBtn) pinBtn.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                PIN 설정
-            `;
-        }
-    }
-}
