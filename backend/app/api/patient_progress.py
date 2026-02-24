@@ -163,7 +163,7 @@ async def get_chart_data(
 
     return {
         "pain": [
-            {"date": p.date, "region_key": p.region_key, "pain_level": p.pain_level}
+            {"date": p.date, "region_key": p.region_key, "pain_level": p.pain_level, "has_drawing": p.drawing_image is not None}
             for p in pain_logs
         ],
         "workouts": [
@@ -171,3 +171,33 @@ async def get_chart_data(
             for w in workouts
         ],
     }
+
+
+@router.get("/{patient_id}/pain-drawings")
+async def get_pain_drawings(
+    patient_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(require_min_role("therapist"))],
+    limit: int = 20,
+):
+    result = await db.execute(
+        select(PatientPainLog)
+        .where(
+            PatientPainLog.patient_id == patient_id,
+            PatientPainLog.drawing_image.isnot(None),
+        )
+        .order_by(PatientPainLog.date.desc())
+        .limit(limit)
+    )
+    logs = result.scalars().all()
+    return [
+        {
+            "id": p.id,
+            "date": p.date,
+            "region_key": p.region_key,
+            "pain_level": p.pain_level,
+            "note": p.note,
+            "drawing_image": p.drawing_image,
+        }
+        for p in logs
+    ]

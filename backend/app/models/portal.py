@@ -86,4 +86,5 @@ class PatientPainLog(Base):
     region_key: Mapped[str] = mapped_column(String(50), nullable=False)
     pain_level: Mapped[int] = mapped_column(Integer, nullable=False)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    drawing_image: Mapped[str | None] = mapped_column(Text, nullable=True)
     synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

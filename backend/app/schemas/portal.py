@@ -103,6 +103,7 @@ class SyncPainLogItem(BaseModel):
     region_key: str
     pain_level: int
     note: Optional[str] = None
+    drawing_image: Optional[str] = None
 
 
 class SyncRequest(BaseModel):

@@ -191,6 +191,7 @@ async def sync_painlogs(
             region_key=item.region_key,
             pain_level=item.pain_level,
             note=item.note,
+            drawing_image=item.drawing_image,
         )
         db.add(record)
         synced += 1

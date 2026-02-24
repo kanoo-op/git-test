@@ -21,6 +21,7 @@ import { renderPatientSoapTab } from './SoapRecords.js';
 import {
     createInvite, fetchInvites,
     fetchPatientProgress, fetchPatientCheckins, fetchPatientWorkouts, fetchPatientChartData,
+    fetchPatientPainDrawings,
 } from '../services/Api.js';
 
 let trendChartInstance = null;
@@ -859,11 +860,12 @@ export function stopProgressPolling() {
 
 async function loadProgressData(patientId, silent = false) {
     try {
-        const [summary, checkins, workouts, chartData] = await Promise.all([
+        const [summary, checkins, workouts, chartData, painDrawings] = await Promise.all([
             fetchPatientProgress(patientId),
             fetchPatientCheckins(patientId, 10),
             fetchPatientWorkouts(patientId, 10),
             fetchPatientChartData(patientId, 7),
+            fetchPatientPainDrawings(patientId).catch(() => []),
         ]);
 
         renderProgressSummary(summary);
@@ -871,6 +873,7 @@ async function loadProgressData(patientId, silent = false) {
         renderWorkoutChart(chartData.workouts);
         renderCheckinsList(checkins);
         renderWorkoutsList(workouts);
+        renderPainDrawings(painDrawings);
 
         const syncEl = document.getElementById('progress-last-sync');
         if (syncEl) {
@@ -1028,6 +1031,68 @@ function renderWorkoutsList(workouts) {
                 <div class="progress-item-exercises">${exercises || '-'}</div>
             </div>`;
     }).join('');
+}
+
+// ═══ Pain Drawings Gallery ═══
+
+function renderPainDrawings(drawings) {
+    const el = document.getElementById('pain-drawings-grid');
+    if (!el) return;
+
+    if (!drawings || !drawings.length) {
+        el.innerHTML = '<div class="empty-state"><p>통증 드로잉 기록이 없습니다.</p></div>';
+        return;
+    }
+
+    el.innerHTML = drawings.map(d => {
+        const date = new Date(d.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+        const region = REGION_LABELS[d.region_key] || d.region_key;
+        return `
+            <div class="pain-drawing-card" data-drawing-id="${escapeHtml(d.id)}">
+                <img src="${escapeHtml(d.drawing_image)}" alt="통증 드로잉" loading="lazy">
+                <div class="pain-drawing-meta">
+                    <span class="drawing-date">${date}</span>
+                    <span class="drawing-region">${region}</span>
+                    <span class="drawing-pain">통증 ${d.pain_level}/10</span>
+                </div>
+            </div>`;
+    }).join('');
+
+    // Click to show modal
+    el.querySelectorAll('.pain-drawing-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.dataset.drawingId;
+            const drawing = drawings.find(d => d.id === id);
+            if (drawing) showDrawingModal(drawing);
+        });
+    });
+}
+
+function showDrawingModal(drawing) {
+    const modal = document.getElementById('pain-drawing-modal');
+    if (!modal) return;
+
+    const img = modal.querySelector('.drawing-modal-img');
+    const date = modal.querySelector('.drawing-modal-date');
+    const info = modal.querySelector('.drawing-modal-info');
+
+    if (img && drawing.drawing_image && drawing.drawing_image.startsWith('data:image/')) {
+        img.src = drawing.drawing_image;
+    }
+    if (date) date.textContent = new Date(drawing.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (info) {
+        const region = REGION_LABELS[drawing.region_key] || drawing.region_key;
+        info.textContent = `${region} · 통증 ${drawing.pain_level}/10${drawing.note ? ' · ' + drawing.note : ''}`;
+    }
+
+    modal.style.display = 'flex';
+
+    const closeBtn = modal.querySelector('.drawing-modal-close');
+    const closeHandler = () => { modal.style.display = 'none'; };
+    if (closeBtn) {
+        closeBtn.onclick = closeHandler;
+    }
+    modal.onclick = (e) => { if (e.target === modal) closeHandler(); };
 }
 
 // Forward aliases (new naming convention)

@@ -281,6 +281,10 @@ export async function fetchPatientChartData(patientId, days = 30) {
     return request('GET', `/patients/${patientId}/progress/chart-data?days=${days}`);
 }
 
+export async function fetchPatientPainDrawings(patientId, limit = 20) {
+    return request('GET', `/patients/${patientId}/pain-drawings?limit=${limit}`);
+}
+
 // --- Assessments (Visits) API ---
 
 export async function fetchAssessments(patientId) {

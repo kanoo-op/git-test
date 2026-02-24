@@ -7632,3 +7632,115 @@ input, textarea, select {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* ═══ Pain Drawings Gallery ═══ */
+
+.pain-drawings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.pain-drawing-card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.pain-drawing-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.pain-drawing-card img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    display: block;
+}
+
+.pain-drawing-meta {
+    padding: 8px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.78em;
+    color: var(--text-secondary);
+}
+
+.pain-drawing-meta .drawing-region {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.pain-drawing-meta .drawing-pain {
+    color: var(--status-severe);
+    font-weight: 600;
+}
+
+/* Pain Drawing Modal */
+
+.pain-drawing-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.drawing-modal-content {
+    position: relative;
+    max-width: 640px;
+    width: 100%;
+    background: var(--bg-primary);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.drawing-modal-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    font-size: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drawing-modal-close:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.drawing-modal-img {
+    width: 100%;
+    display: block;
+}
+
+.drawing-modal-footer {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88em;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border-light);
+}
+
+.drawing-modal-info {
+    font-weight: 500;
+    color: var(--text-primary);
+}
