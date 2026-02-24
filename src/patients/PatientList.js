@@ -2,6 +2,7 @@
 
 import * as storage from '../services/Storage.js';
 import { createPatient as apiCreatePatient, updatePatient as apiUpdatePatient, deletePatient as apiDeletePatient, createInvite } from '../services/Api.js';
+import { syncPatientsFromServer } from '../services/Auth.js';
 import { resetRegionColors } from '../anatomy/Highlights.js';
 import { updatePatientCard } from '../ui/Sidebar.js';
 import { calculateAge, escapeHtml } from '../utils/helpers.js';
@@ -23,12 +24,26 @@ export function openPatientDetail(patientId) {
     switchView('patient-detail');
 }
 
+let _syncing = false;
+
 export function renderPatientsList() {
     const list = document.getElementById('patients-list');
     const searchQuery = document.getElementById('input-patient-search').value;
     const sortValue = document.getElementById('select-patient-sort').value;
 
     let patients = storage.searchPatients(searchQuery);
+
+    // 서버에서 환자 목록 동기화 (중복 호출 방지)
+    if (!_syncing) {
+        _syncing = true;
+        const prevCount = patients.length;
+        syncPatientsFromServer().then(() => {
+            const newCount = storage.searchPatients(searchQuery).length;
+            if (newCount !== prevCount) {
+                renderPatientsList();
+            }
+        }).finally(() => { _syncing = false; });
+    }
 
     const [sortBy, sortDir] = sortValue.split('-');
     patients = storage.sortPatients(patients, sortBy, sortDir === 'asc');

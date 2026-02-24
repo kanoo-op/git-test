@@ -179,7 +179,7 @@ async function handleLogin() {
 /**
  * Sync patients from backend API into local Storage
  */
-async function syncPatientsFromServer() {
+export async function syncPatientsFromServer() {
     try {
         const result = await api.fetchPatients({ limit: 1000 });
         const serverPatients = result.items || [];
