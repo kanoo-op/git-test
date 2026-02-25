@@ -19,7 +19,6 @@ import {
 } from '../ui/ViewRouter.js';
 import { closeContextPanel } from '../ui/ContextPanel.js';
 import { getAnatomyInfo } from '../anatomy/AnatomyData.js';
-import { initVoiceInput, resetVoiceInput, preserveExistingText, applyAutoSuggestions, getTagsSummary } from '../ui/VoiceInput.js';
 
 // ======== Region coloring ========
 
@@ -177,76 +176,22 @@ export function startNewAssessment() {
 
 export function showEndAssessmentModal() {
     document.getElementById('end-assessment-overlay').style.display = 'flex';
-
-    initSoapTabs();
-
-    const patient = storage.getCurrentPatient();
-    const currentAssessment = getCurrentAssessment();
-    if (patient && currentAssessment && currentAssessment.soapNotes) {
-        loadSoapData(currentAssessment.soapNotes);
-    } else {
-        clearSoapForm();
+    const notesEl = document.getElementById('end-assessment-notes');
+    if (notesEl) {
+        const currentAssessment = getCurrentAssessment();
+        notesEl.value = currentAssessment?.overallNotes || '';
+        notesEl.focus();
     }
-
-    fillObjectiveAutoFindings();
-    autoFillAllSoapSections();
-
-    // 전체 자동채우기 버튼
-    const soapAutoFillBtn = document.getElementById('soap-autofill-btn');
-    if (soapAutoFillBtn) {
-        soapAutoFillBtn.onclick = () => {
-            autoFillAllSoapSections();
-            window.showToast?.('빈 필드에 자동 소견이 채워졌습니다.', 'success', 2000);
-        };
-    }
-
-    // 음성 입력 초기화
-    resetVoiceInput();
-    initVoiceInput({
-        targetId: 'soap-symptom-desc',
-        tagsContainerId: 'voice-tags',
-        micBtnId: 'voice-mic-btn',
-        statusId: 'voice-status',
-        onTags: (tags) => {
-            const autoBtn = document.getElementById('voice-autofill-btn');
-            if (autoBtn) autoBtn.style.display = tags.size > 0 ? 'inline-flex' : 'none';
-        }
-    });
-
-    // 자동채우기 버튼
-    const autoFillBtn = document.getElementById('voice-autofill-btn');
-    if (autoFillBtn) {
-        autoFillBtn.onclick = () => {
-            applyAutoSuggestions();
-            window.showToast?.('감지된 키워드가 빈 필드에 자동 적용되었습니다.', 'success', 2000);
-        };
-    }
-
-    document.getElementById('soap-chief-complaint').focus();
 }
 
 export function hideEndAssessmentModal() {
     document.getElementById('end-assessment-overlay').style.display = 'none';
-    resetVoiceInput();
 }
 
 export function confirmEndAssessment() {
-    const soapNotes = collectSoapData();
     const currentAssessment = getCurrentAssessment();
-
-    const overallParts = [];
-    if (soapNotes.subjective.chiefComplaint) {
-        overallParts.push('주호소: ' + soapNotes.subjective.chiefComplaint);
-    } else if (soapNotes.subjective.painLocation) {
-        overallParts.push('통증: ' + soapNotes.subjective.painLocation);
-    }
-    if (soapNotes.assessment.clinicalImpression) overallParts.push('소견: ' + soapNotes.assessment.clinicalImpression);
-    if (soapNotes.plan.treatment) {
-        overallParts.push('계획: ' + soapNotes.plan.treatment);
-    } else if (soapNotes.plan.hep) {
-        overallParts.push('HEP: ' + soapNotes.plan.hep);
-    }
-    const overallNotes = overallParts.join(' | ');
+    const notesEl = document.getElementById('end-assessment-notes');
+    const overallNotes = notesEl ? notesEl.value.trim() : '';
 
     if (currentAssessment) {
         const patient = storage.getCurrentPatient();
@@ -261,7 +206,6 @@ export function confirmEndAssessment() {
                 storage.updateAssessment(patient.id, currentAssessment.id, {
                     summary,
                     overallNotes,
-                    soapNotes,
                     status: 'completed',
                     exercisePlan
                 });
@@ -275,7 +219,6 @@ export function confirmEndAssessment() {
     document.getElementById('region-assessment-panel').style.display = 'none';
     hideEndAssessmentModal();
 
-    // 세션 완료 후 환자 상세 화면으로 전환하여 SOAP 기록 즉시 표시
     switchView('patient-detail');
 }
 
@@ -323,218 +266,7 @@ function buildExercisePlan(assessment) {
     return exercisePlan;
 }
 
-// ======== SOAP Notes ========
-
-function initSoapTabs() {
-    const tabs = document.querySelectorAll('.soap-tab');
-    const contents = document.querySelectorAll('.soap-tab-content');
-
-    tabs.forEach(tab => {
-        tab.onclick = () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            contents.forEach(c => c.classList.remove('active'));
-            tab.classList.add('active');
-            const target = tab.dataset.soapTab;
-            document.getElementById('soap-' + target).classList.add('active');
-        };
-    });
-
-    const vasSlider = document.getElementById('soap-pain-scale');
-    const vasValue = document.getElementById('soap-vas-value');
-    vasSlider.oninput = () => { vasValue.textContent = vasSlider.value; };
-
-    tabs.forEach(t => t.classList.remove('active'));
-    contents.forEach(c => c.classList.remove('active'));
-    tabs[0].classList.add('active');
-    contents[0].classList.add('active');
-}
-
-function clearSoapForm() {
-    document.getElementById('soap-chief-complaint').value = '';
-    document.getElementById('soap-pain-scale').value = 0;
-    document.getElementById('soap-vas-value').textContent = '0';
-    document.getElementById('soap-symptom-desc').value = '';
-    document.getElementById('soap-pain-location').value = '';
-    document.getElementById('soap-onset').value = '';
-    document.getElementById('soap-aggravating').value = '';
-    document.getElementById('soap-relieving').value = '';
-
-    document.getElementById('soap-auto-findings').value = '';
-    document.getElementById('soap-rom').value = '';
-    document.getElementById('soap-mmt').value = '';
-    document.getElementById('soap-special-tests').value = '';
-    document.getElementById('soap-palpation').value = '';
-    document.getElementById('soap-gait').value = '';
-    document.getElementById('soap-additional-findings').value = '';
-
-    document.getElementById('soap-clinical-impression').value = '';
-    document.getElementById('soap-progress-level').value = 'initial';
-    document.getElementById('soap-functional-level').value = '';
-    document.getElementById('soap-goals').value = '';
-
-    document.getElementById('soap-treatment').value = '';
-    document.getElementById('soap-hep').value = '';
-    document.getElementById('soap-frequency').value = '';
-    document.getElementById('soap-duration').value = '';
-    document.getElementById('soap-next-visit').value = '';
-    document.getElementById('soap-precautions').value = '';
-    document.getElementById('soap-referral').value = '';
-}
-
-function loadSoapData(soap) {
-    if (!soap) return;
-    const s = soap.subjective || {};
-    document.getElementById('soap-chief-complaint').value = s.chiefComplaint || '';
-    document.getElementById('soap-pain-scale').value = s.painScale || 0;
-    document.getElementById('soap-vas-value').textContent = String(s.painScale || 0);
-    document.getElementById('soap-symptom-desc').value = s.symptomDescription || '';
-    document.getElementById('soap-pain-location').value = s.painLocation || '';
-    document.getElementById('soap-onset').value = s.onset || '';
-    document.getElementById('soap-aggravating').value = s.aggravating || '';
-    document.getElementById('soap-relieving').value = s.relieving || '';
-
-    const o = soap.objective || {};
-    document.getElementById('soap-auto-findings').value = o.autoFindings || '';
-    document.getElementById('soap-rom').value = o.rom || '';
-    document.getElementById('soap-mmt').value = o.mmt || '';
-    document.getElementById('soap-special-tests').value = o.specialTests || '';
-    document.getElementById('soap-palpation').value = o.palpation || '';
-    document.getElementById('soap-gait').value = o.gait || '';
-    document.getElementById('soap-additional-findings').value = o.additionalFindings || '';
-
-    const a = soap.assessment || {};
-    document.getElementById('soap-clinical-impression').value = a.clinicalImpression || '';
-    document.getElementById('soap-progress-level').value = a.progressLevel || 'initial';
-    document.getElementById('soap-functional-level').value = a.functionalLevel || '';
-    document.getElementById('soap-goals').value = a.goals || '';
-
-    const p = soap.plan || {};
-    document.getElementById('soap-treatment').value = p.treatment || '';
-    document.getElementById('soap-hep').value = p.hep || '';
-    document.getElementById('soap-frequency').value = p.frequency || '';
-    document.getElementById('soap-duration').value = p.duration || '';
-    document.getElementById('soap-next-visit').value = p.nextVisit || '';
-    document.getElementById('soap-precautions').value = p.precautions || '';
-    document.getElementById('soap-referral').value = p.referral || '';
-}
-
-function serializeVoiceTags() {
-    const tags = getTagsSummary();
-    if (tags.size === 0) return null;
-    const obj = {};
-    for (const [cat, keywords] of tags) {
-        obj[cat] = keywords;
-    }
-    return obj;
-}
-
-function collectSoapData() {
-    return {
-        subjective: {
-            chiefComplaint: document.getElementById('soap-chief-complaint').value.trim(),
-            painScale: parseInt(document.getElementById('soap-pain-scale').value, 10) || 0,
-            symptomDescription: document.getElementById('soap-symptom-desc').value.trim(),
-            painLocation: document.getElementById('soap-pain-location').value.trim(),
-            onset: document.getElementById('soap-onset').value.trim(),
-            aggravating: document.getElementById('soap-aggravating').value.trim(),
-            relieving: document.getElementById('soap-relieving').value.trim(),
-            voiceTags: serializeVoiceTags(),
-        },
-        objective: {
-            autoFindings: document.getElementById('soap-auto-findings').value.trim(),
-            rom: document.getElementById('soap-rom').value.trim(),
-            mmt: document.getElementById('soap-mmt').value.trim(),
-            specialTests: document.getElementById('soap-special-tests').value.trim(),
-            palpation: document.getElementById('soap-palpation').value.trim(),
-            gait: document.getElementById('soap-gait').value.trim(),
-            additionalFindings: document.getElementById('soap-additional-findings').value.trim(),
-        },
-        assessment: {
-            clinicalImpression: document.getElementById('soap-clinical-impression').value.trim(),
-            progressLevel: document.getElementById('soap-progress-level').value,
-            functionalLevel: document.getElementById('soap-functional-level').value.trim(),
-            goals: document.getElementById('soap-goals').value.trim(),
-        },
-        plan: {
-            treatment: document.getElementById('soap-treatment').value.trim(),
-            hep: document.getElementById('soap-hep').value.trim(),
-            frequency: document.getElementById('soap-frequency').value.trim(),
-            duration: document.getElementById('soap-duration').value.trim(),
-            nextVisit: document.getElementById('soap-next-visit').value.trim(),
-            precautions: document.getElementById('soap-precautions').value.trim(),
-            referral: document.getElementById('soap-referral').value.trim(),
-        }
-    };
-}
-
-function fillObjectiveAutoFindings() {
-    const currentAssessment = getCurrentAssessment();
-    if (!currentAssessment) return;
-    const lines = [];
-
-    const selections = currentAssessment.selections || [];
-
-    // regionKey 기반으로 중증도 그룹핑 (중복 제거, 최고 중증도 유지)
-    const SEV_ORDER = { severe: 3, moderate: 2, mild: 1, normal: 0 };
-    const regionSevMap = new Map();
-    for (const s of selections) {
-        if (!s.severity || s.severity === 'normal') continue;
-        const key = s.regionKey || s.region || s.meshId;
-        const existing = regionSevMap.get(key);
-        if (!existing || (SEV_ORDER[s.severity] || 0) > (SEV_ORDER[existing] || 0)) {
-            regionSevMap.set(key, s.severity);
-        }
-    }
-
-    // 중증도별 그룹 (해부학 이름 사용)
-    const sevGroups = {};
-    for (const [key, sev] of regionSevMap) {
-        const info = getAnatomyInfo(key);
-        const label = info ? info.name : (regionKeyToLabel(key) || key);
-        if (!sevGroups[sev]) sevGroups[sev] = [];
-        sevGroups[sev].push(label);
-    }
-
-    // 중증 → 경도 순으로 출력
-    const sevOrder = ['severe', 'moderate', 'mild'];
-    for (const sev of sevOrder) {
-        if (sevGroups[sev]) {
-            lines.push(`[${SEV_LABELS[sev]}] ${sevGroups[sev].join(', ')}`);
-        }
-    }
-
-    // 자세분석 지표
-    const pa = currentAssessment.postureAnalysis;
-    if (pa && pa.metrics) {
-        lines.push('');
-        lines.push('── 자세분석 지표 ──');
-        const m = pa.metrics;
-        if (m.forwardHead) lines.push(`전방두부: ${m.forwardHead.value}° (${SEV_LABELS[m.forwardHead.severity] || m.forwardHead.severity})`);
-        if (m.shoulderDiff) lines.push(`어깨 높이차: ${m.shoulderDiff.value}cm (${SEV_LABELS[m.shoulderDiff.severity] || ''})`);
-        if (m.pelvicTilt) lines.push(`골반 기울기: ${m.pelvicTilt.value}° (${SEV_LABELS[m.pelvicTilt.severity] || ''})`);
-        if (m.trunkTilt) lines.push(`체간 측방: ${m.trunkTilt.value}° (${SEV_LABELS[m.trunkTilt.severity] || ''})`);
-        if (m.kneeLeft && m.kneeLeft.severity !== 'normal') lines.push(`좌측 무릎: ${m.kneeLeft.type} (${SEV_LABELS[m.kneeLeft.severity]})`);
-        if (m.kneeRight && m.kneeRight.severity !== 'normal') lines.push(`우측 무릎: ${m.kneeRight.type} (${SEV_LABELS[m.kneeRight.severity]})`);
-        if (m.kyphosis && m.kyphosis.severity !== 'normal') lines.push(`상부 후만: ${SEV_LABELS[m.kyphosis.severity]}`);
-    }
-
-    // 주요 관련 근육 요약
-    const affectedMuscles = new Set();
-    for (const [key] of regionSevMap) {
-        const info = getAnatomyInfo(key);
-        if (info && info.keyMuscles) {
-            info.keyMuscles.slice(0, 2).forEach(m => affectedMuscles.add(m));
-        }
-    }
-    if (affectedMuscles.size > 0) {
-        lines.push('');
-        lines.push(`관련 근육: ${[...affectedMuscles].join(', ')}`);
-    }
-
-    document.getElementById('soap-auto-findings').value = lines.join('\n');
-}
-
-// ======== SOAP 전체 자동채우기 ========
+// ======== Region Severity Map (used by exercise plan) ========
 
 function getRegionSeverityMap(assessment) {
     const SEV_ORDER = { severe: 3, moderate: 2, mild: 1, normal: 0 };
@@ -548,162 +280,6 @@ function getRegionSeverityMap(assessment) {
         }
     }
     return map;
-}
-
-export function autoFillAllSoapSections() {
-    const currentAssessment = getCurrentAssessment();
-    if (!currentAssessment) return;
-
-    const patient = storage.getCurrentPatient();
-    if (!patient) return;
-
-    const regionSevMap = getRegionSeverityMap(currentAssessment);
-
-    // === S (Subjective): 통증 위치 ===
-    const painLocEl = document.getElementById('soap-pain-location');
-    if (painLocEl && !painLocEl.value.trim()) {
-        const painParts = [];
-        for (const [key] of regionSevMap) {
-            const info = getAnatomyInfo(key);
-            const label = info ? info.name : (regionKeyToLabel(key) || key);
-            painParts.push(label);
-        }
-        if (painParts.length > 0) {
-            painLocEl.value = painParts.join(', ');
-        }
-    }
-
-    // === S (Subjective): VAS 통증 척도 ===
-    const vasSlider = document.getElementById('soap-pain-scale');
-    const vasValue = document.getElementById('soap-vas-value');
-    if (vasSlider && parseInt(vasSlider.value, 10) === 0 && regionSevMap.size > 0) {
-        let maxSev = 0;
-        for (const sev of regionSevMap.values()) {
-            const rank = severityRank(sev);
-            if (rank > maxSev) maxSev = rank;
-        }
-        const vasMap = { 3: 7, 2: 5, 1: 3 };
-        const suggestedVas = vasMap[maxSev] || 0;
-        if (suggestedVas > 0) {
-            vasSlider.value = suggestedVas;
-            if (vasValue) vasValue.textContent = String(suggestedVas);
-        }
-    }
-
-    // === A (Assessment): 진행 수준 ===
-    const progressEl = document.getElementById('soap-progress-level');
-    if (progressEl && progressEl.value === 'initial') {
-        const prevAssessments = (patient.visits || [])
-            .filter(a => a.id !== currentAssessment.id)
-            .sort((a, b) => (b.date || 0) - (a.date || 0));
-
-        if (prevAssessments.length > 0) {
-            const prevMap = getRegionSeverityMap(prevAssessments[0]);
-            const curValues = [...regionSevMap.values()].map(severityRank);
-            const prevValues = [...prevMap.values()].map(severityRank);
-
-            // 비교 가능한 데이터가 양쪽 모두 있을 때만 판정
-            if (curValues.length > 0 || prevValues.length > 0) {
-                const avgSev = arr => arr.length === 0 ? 0 : arr.reduce((s, v) => s + v, 0) / arr.length;
-                const curAvg = avgSev(curValues);
-                const prevAvg = avgSev(prevValues);
-
-                if (curAvg < prevAvg - 0.3) {
-                    progressEl.value = 'improving';
-                } else if (curAvg > prevAvg + 0.3) {
-                    progressEl.value = 'worsening';
-                } else {
-                    progressEl.value = 'plateau';
-                }
-            }
-        }
-    }
-
-    // === A (Assessment): 임상 소견 ===
-    const impressionEl = document.getElementById('soap-clinical-impression');
-    if (impressionEl && !impressionEl.value.trim()) {
-        const parts = [];
-
-        // 부위별 심각도 요약 (중증→경도 순 정렬)
-        const sevOrder = ['severe', 'moderate', 'mild'];
-        const sevSummary = [];
-        for (const sev of sevOrder) {
-            for (const [key, s] of regionSevMap) {
-                if (s !== sev) continue;
-                const info = getAnatomyInfo(key);
-                const label = info ? info.name : (regionKeyToLabel(key) || key);
-                sevSummary.push(`${label} ${SEV_LABELS[sev]}`);
-            }
-        }
-        if (sevSummary.length > 0) parts.push(sevSummary.join(', '));
-
-        // 관련 질환 추정 (moderate/severe만)
-        const diseases = new Set();
-        for (const [key, sev] of regionSevMap) {
-            if (sev === 'mild') continue;
-            const info = getAnatomyInfo(key);
-            if (info && info.commonPathologies && info.commonPathologies.length > 0) {
-                diseases.add(info.commonPathologies[0] + ' 의심');
-            }
-        }
-        if (diseases.size > 0) parts.push('관련 질환: ' + [...diseases].join(', '));
-
-        // 자세분석 지표 요약
-        const pa = currentAssessment.postureAnalysis;
-        if (pa && pa.metrics) {
-            const m = pa.metrics;
-            const postureParts = [];
-            if (m.forwardHead) postureParts.push(`전방두부 ${m.forwardHead.value}°`);
-            if (m.shoulderDiff && m.shoulderDiff.severity !== 'normal') postureParts.push(`어깨 높이차 ${m.shoulderDiff.value}cm`);
-            if (m.pelvicTilt && m.pelvicTilt.severity !== 'normal') postureParts.push(`골반 기울기 ${m.pelvicTilt.value}°`);
-            if (postureParts.length > 0) parts.push(postureParts.join(', '));
-        }
-
-        if (parts.length > 0) {
-            impressionEl.value = parts.join('. ') + '.';
-        }
-    }
-
-    // === P (Plan): 홈 운동 프로그램 (좌/우 중복 제거) ===
-    const hepEl = document.getElementById('soap-hep');
-    if (hepEl && !hepEl.value.trim()) {
-        const seenBaseRegions = new Set();
-        const exerciseParts = [];
-        for (const [key] of regionSevMap) {
-            // 좌/우 접미사 제거하여 기본 부위명 추출
-            const baseKey = key.replace(/_(l|r)$/, '');
-            if (seenBaseRegions.has(baseKey)) continue;
-            seenBaseRegions.add(baseKey);
-
-            const info = getAnatomyInfo(key);
-            if (info && info.exercises && info.exercises.length > 0) {
-                // 좌/우 표기 없는 부위명 사용
-                const regionLabel = info.name.replace(/ \((좌|우)\)$/, '');
-                const exNames = info.exercises.slice(0, 2).map(e => e.name).join(', ');
-                exerciseParts.push(`${regionLabel}: ${exNames}`);
-            }
-        }
-        if (exerciseParts.length > 0) {
-            hepEl.value = exerciseParts.join(' / ');
-        }
-    }
-
-    // === P (Plan): 빈도 ===
-    const freqEl = document.getElementById('soap-frequency');
-    if (freqEl && !freqEl.value.trim()) {
-        let maxSev = 0;
-        for (const sev of regionSevMap.values()) {
-            const rank = severityRank(sev);
-            if (rank > maxSev) maxSev = rank;
-        }
-        if (maxSev >= 3) {
-            freqEl.value = '주 3~5회';
-        } else if (maxSev >= 2) {
-            freqEl.value = '주 2~3회';
-        } else if (maxSev >= 1) {
-            freqEl.value = '주 1~2회';
-        }
-    }
 }
 
 // ======== Selection/Severity Handling ========

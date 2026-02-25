@@ -1,10 +1,11 @@
 // PdfExport.js - PDF report generation
 
 import * as storage from '../services/Storage.js';
-import { SEV_LABELS, SEV_PDF_COLORS, PROGRESS_LABELS, calculateAge, severityRank, regionSortIndex } from '../utils/helpers.js';
+import { SEV_LABELS, SEV_PDF_COLORS, calculateAge, severityRank, regionSortIndex } from '../utils/helpers.js';
 import { captureQuadScreenshot } from '../core/SceneManager.js';
 import { applyRegionColors, resetRegionColors } from '../anatomy/Highlights.js';
 import { getMappingRegions, PREDEFINED_REGIONS } from '../anatomy/Regions.js';
+import { fetchPatientProgress, fetchPatientCheckins, fetchPatientWorkouts } from '../services/Api.js';
 
 // ── Korean font loader (cached) ──
 
@@ -157,11 +158,8 @@ export async function exportAssessmentPDF(patientId, assessmentId) {
             }
         }
 
-        // SOAP Notes or legacy overallNotes
-        const soap = assessment.soapNotes;
-        if (soap) {
-            y = renderSoapPdfSection(doc, y, pageW, soap);
-        } else if (assessment.overallNotes) {
+        // Overall notes
+        if (assessment.overallNotes) {
             y += 6;
             if (y > 260) { doc.addPage(); y = 20; }
             doc.setFontSize(11);
@@ -368,30 +366,88 @@ export async function exportProgressPDF(patientId) {
             }
         }
 
-        // Latest SOAP Plan
-        if (last.soapNotes && last.soapNotes.plan) {
-            y += 6;
-            if (y > 260) { doc.addPage(); y = 20; }
-            doc.setFontSize(11);
-            doc.setFont('KoreanFont', 'bold');
-            doc.setTextColor(50);
-            doc.text('최근 치료 계획 (Plan)', 14, y);
-            y += 6;
-            doc.setFontSize(10);
-            doc.setFont('KoreanFont', 'normal');
-            doc.setTextColor(60);
-            const p = last.soapNotes.plan;
-            const planItems = [];
-            if (p.treatment) planItems.push(`치료 계획: ${p.treatment}`);
-            if (p.hep) planItems.push(`가정 운동: ${p.hep}`);
-            if (p.frequency) planItems.push(`치료 빈도: ${p.frequency}`);
-            if (p.precautions) planItems.push(`주의사항: ${p.precautions}`);
-            for (const line of planItems) {
-                if (y > 270) { doc.addPage(); y = 20; }
-                const wrapped = doc.splitTextToSize(line, pageW - 28);
-                doc.text(wrapped, 14, y);
-                y += wrapped.length * 5;
+        // Patient App Data
+        try {
+            const [summary, checkins, workouts] = await Promise.all([
+                fetchPatientProgress(patientId).catch(() => null),
+                fetchPatientCheckins(patientId, 5).catch(() => []),
+                fetchPatientWorkouts(patientId, 5).catch(() => []),
+            ]);
+
+            if (summary || checkins.length > 0 || workouts.length > 0) {
+                y += 8;
+                if (y > 250) { doc.addPage(); y = 20; }
+                doc.setFontSize(11);
+                doc.setFont('KoreanFont', 'bold');
+                doc.setTextColor(50);
+                doc.text('환자 앱 데이터', 14, y);
+                y += 7;
+                doc.setFontSize(10);
+                doc.setFont('KoreanFont', 'normal');
+                doc.setTextColor(60);
+
+                if (summary) {
+                    const avgPain = summary.avg_pain_7d != null ? summary.avg_pain_7d.toFixed(1) : '-';
+                    const rate = summary.completion_rate_7d != null ? Math.round(summary.completion_rate_7d) + '%' : '-';
+                    doc.text(`총 체크인: ${summary.total_checkins ?? 0}회 | 총 운동: ${summary.total_workouts ?? 0}회 | 7일 평균 통증: ${avgPain} | 7일 완수율: ${rate}`, 14, y);
+                    y += 6;
+                }
+
+                if (checkins.length > 0) {
+                    if (y > 250) { doc.addPage(); y = 20; }
+                    doc.setFont('KoreanFont', 'bold');
+                    doc.text('최근 체크인', 14, y);
+                    y += 5;
+                    doc.setFont('KoreanFont', 'normal');
+                    doc.setFontSize(9);
+                    doc.setTextColor(100);
+                    doc.text('날짜', 14, y); doc.text('통증', 50, y); doc.text('기분', 80, y); doc.text('메모', 110, y);
+                    y += 4;
+                    doc.setDrawColor(220);
+                    doc.line(14, y, pageW - 14, y);
+                    y += 4;
+                    doc.setTextColor(60);
+                    for (const c of checkins) {
+                        if (y > 270) { doc.addPage(); y = 20; }
+                        const date = new Date(c.created_at || c.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+                        doc.text(date, 14, y);
+                        doc.text(`${c.pain_level ?? '-'}/10`, 50, y);
+                        doc.text(String(c.mood ?? '-'), 80, y);
+                        doc.text(String(c.notes || '-').substring(0, 40), 110, y);
+                        y += 5;
+                    }
+                    y += 2;
+                }
+
+                if (workouts.length > 0) {
+                    if (y > 250) { doc.addPage(); y = 20; }
+                    doc.setFontSize(10);
+                    doc.setFont('KoreanFont', 'bold');
+                    doc.setTextColor(60);
+                    doc.text('최근 운동 기록', 14, y);
+                    y += 5;
+                    doc.setFont('KoreanFont', 'normal');
+                    doc.setFontSize(9);
+                    doc.setTextColor(100);
+                    doc.text('날짜', 14, y); doc.text('운동명', 50, y); doc.text('완료', 130, y); doc.text('난이도', 155, y);
+                    y += 4;
+                    doc.setDrawColor(220);
+                    doc.line(14, y, pageW - 14, y);
+                    y += 4;
+                    doc.setTextColor(60);
+                    for (const w of workouts) {
+                        if (y > 270) { doc.addPage(); y = 20; }
+                        const date = new Date(w.created_at || w.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+                        doc.text(date, 14, y);
+                        doc.text(String(w.exercise_name || w.prescription_name || '-').substring(0, 35), 50, y);
+                        doc.text(w.completed ? 'O' : 'X', 130, y);
+                        doc.text(String(w.rpe || '-'), 155, y);
+                        y += 5;
+                    }
+                }
             }
+        } catch (e) {
+            // Silently skip app data if API fails
         }
 
         // Footer
@@ -493,11 +549,6 @@ export async function exportReferralPDF(patientId, referralData) {
             const dist = Object.entries(SEV_LABELS).filter(([k]) => counts[k] > 0).map(([k, l]) => `${l} ${counts[k]}`).join(', ');
             if (dist) { doc.text(`심각도 분포: ${dist}`, 14, y); y += 5; }
             doc.text(`총 내원 횟수: ${assessments.length}회`, 14, y); y += 6;
-
-            // SOAP summary
-            if (latest.soapNotes) {
-                y = renderSoapPdfSection(doc, y, pageW, latest.soapNotes);
-            }
         }
 
         // Referral purpose
@@ -606,92 +657,6 @@ function buildSevMap(assessment) {
         }
     }
     return map;
-}
-
-function renderSoapPdfSection(doc, y, pageW, soap) {
-    const sections = [
-        {
-            title: 'S - Subjective (주관적 소견)',
-            items: () => {
-                const s = soap.subjective || {};
-                const lines = [];
-                if (s.chiefComplaint) lines.push(`주호소: ${s.chiefComplaint}`);
-                if (s.painScale > 0) lines.push(`통증 척도 (VAS): ${s.painScale}/10`);
-                if (s.symptomDescription) lines.push(`증상: ${s.symptomDescription}`);
-                if (s.painLocation) lines.push(`통증 위치: ${s.painLocation}`);
-                if (s.onset) lines.push(`발병 시기: ${s.onset}`);
-                if (s.aggravating) lines.push(`악화 요인: ${s.aggravating}`);
-                if (s.relieving) lines.push(`완화 요인: ${s.relieving}`);
-                return lines;
-            }
-        },
-        {
-            title: 'O - Objective (객관적 소견)',
-            items: () => {
-                const o = soap.objective || {};
-                const lines = [];
-                if (o.autoFindings) lines.push(`자동 소견: ${o.autoFindings}`);
-                if (o.rom) lines.push(`ROM: ${o.rom}`);
-                if (o.mmt) lines.push(`MMT: ${o.mmt}`);
-                if (o.specialTests) lines.push(`특수 검사: ${o.specialTests}`);
-                if (o.palpation) lines.push(`촉진: ${o.palpation}`);
-                if (o.gait) lines.push(`보행: ${o.gait}`);
-                if (o.additionalFindings) lines.push(`추가 소견: ${o.additionalFindings}`);
-                return lines;
-            }
-        },
-        {
-            title: 'A - Assessment (평가)',
-            items: () => {
-                const a = soap.assessment || {};
-                const lines = [];
-                if (a.clinicalImpression) lines.push(`임상 소견: ${a.clinicalImpression}`);
-                if (a.progressLevel) lines.push(`진행 상태: ${PROGRESS_LABELS[a.progressLevel] || a.progressLevel}`);
-                if (a.functionalLevel) lines.push(`기능 수준: ${a.functionalLevel}`);
-                if (a.goals) lines.push(`목표: ${a.goals}`);
-                return lines;
-            }
-        },
-        {
-            title: 'P - Plan (계획)',
-            items: () => {
-                const p = soap.plan || {};
-                const lines = [];
-                if (p.treatment) lines.push(`치료 계획: ${p.treatment}`);
-                if (p.hep) lines.push(`가정 운동: ${p.hep}`);
-                if (p.frequency) lines.push(`치료 빈도: ${p.frequency}`);
-                if (p.duration) lines.push(`치료 기간: ${p.duration}`);
-                if (p.nextVisit) lines.push(`다음 방문: ${p.nextVisit}`);
-                if (p.precautions) lines.push(`주의사항: ${p.precautions}`);
-                if (p.referral) lines.push(`의뢰: ${p.referral}`);
-                return lines;
-            }
-        }
-    ];
-
-    for (const section of sections) {
-        const items = section.items();
-        if (items.length === 0) continue;
-
-        y += 6;
-        if (y > 260) { doc.addPage(); y = 20; }
-        doc.setFontSize(11);
-        doc.setFont('KoreanFont', 'bold');
-        doc.setTextColor(50);
-        doc.text(section.title, 14, y);
-        y += 6;
-        doc.setFontSize(10);
-        doc.setFont('KoreanFont', 'normal');
-        doc.setTextColor(60);
-        for (const line of items) {
-            if (y > 270) { doc.addPage(); y = 20; }
-            const wrapped = doc.splitTextToSize(line, pageW - 28);
-            doc.text(wrapped, 14, y);
-            y += wrapped.length * 5;
-        }
-    }
-
-    return y;
 }
 
 // Forward aliases (new naming convention)

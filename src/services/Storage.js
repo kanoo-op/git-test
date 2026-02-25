@@ -294,45 +294,6 @@ export function createVisit(patientId) {
     return visit;
 }
 
-export function createSoapVisit(patientId) {
-    const patient = getPatient(patientId);
-    if (!patient) return null;
-    const visit = {
-        id: crypto.randomUUID(),
-        visitNumber: (patient.visits?.length || 0) + 1,
-        date: Date.now(),
-        status: 'completed',
-        type: 'soap-only',
-        selections: [],
-        highlightState: [],
-        summary: '',
-        overallNotes: '',
-        soapNotes: null,
-        exercisePlan: []
-    };
-    patient.visits.push(visit);
-    saveData(data);
-    return visit;
-}
-
-export function getAllSoapRecords() {
-    const records = [];
-    for (const p of data.patients) {
-        for (const v of (p.visits || [])) {
-            if (v.soapNotes) {
-                records.push({
-                    ...v,
-                    patientId: p.id,
-                    patientName: p.name,
-                    patientDiagnosis: p.diagnosis || ''
-                });
-            }
-        }
-    }
-    records.sort((a, b) => b.date - a.date);
-    return records;
-}
-
 export function getVisit(patientId, visitId) {
     const patient = getPatient(patientId);
     if (!patient) return null;
@@ -393,22 +354,9 @@ export function searchPatients(query) {
         if (p.name.toLowerCase().includes(q)) return true;
         // 진단/호소 검색
         if (p.diagnosis && p.diagnosis.toLowerCase().includes(q)) return true;
-        // 내원(세션) 내 SOAP 노트 검색
+        // 내원 메모 검색
         for (const v of (p.visits || [])) {
             if (v.overallNotes && v.overallNotes.toLowerCase().includes(q)) return true;
-            const soap = v.soapNotes;
-            if (!soap) continue;
-            const s = soap.subjective || {};
-            const o = soap.objective || {};
-            const as = soap.assessment || {};
-            const pl = soap.plan || {};
-            const fields = [
-                s.chiefComplaint, s.painLocation, s.symptomDescription,
-                o.autoFindings, o.rom, o.mmt, o.specialTests, o.palpation,
-                as.clinicalImpression, as.functionalLevel, as.goals,
-                pl.treatment, pl.hep, pl.frequency, pl.precautions, pl.referral,
-            ];
-            if (fields.some(f => f && String(f).toLowerCase().includes(q))) return true;
         }
         return false;
     });

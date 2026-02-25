@@ -20,7 +20,6 @@ import { initMultiView, setViewMode } from './core/MultiView.js';
 import { initExerciseRecPanel, hideExerciseRecommendations } from './ui/ExerciseRecommendation.js';
 import { initExerciseMode, stopExerciseMode } from './pose/ExerciseMode.js';
 import { initReportPanel } from './ui/ReportPanel.js';
-import { initSoapRecordsView } from './patients/SoapRecords.js';
 import { initAuth, handleLogout } from './services/Auth.js';
 
 // Toast + Video Modal (self-registering on window)
@@ -105,7 +104,6 @@ loadModel(
         initExerciseRecPanel();
         initExerciseMode();
         initReportPanel();
-        initSoapRecordsView();
 
         // Selection service: keyboard bindings + hover tooltip listener
         initSelectionKeyboard();

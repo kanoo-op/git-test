@@ -1,8 +1,9 @@
 // ReportPanel.js - Report generation view
 
 import * as storage from '../services/Storage.js';
-import { SEV_LABELS, SEV_COLORS, GENDER_LABELS, PROGRESS_LABELS, calculateAge, severityRank, regionSortIndex, escapeHtml } from '../utils/helpers.js';
+import { SEV_LABELS, SEV_COLORS, GENDER_LABELS, calculateAge, severityRank, regionSortIndex, escapeHtml } from '../utils/helpers.js';
 import { exportAssessmentPDF, exportProgressPDF, exportReferralPDF } from '../patients/PdfExport.js';
+import { fetchPatientProgress, fetchPatientCheckins, fetchPatientWorkouts, fetchPatientPainDrawings } from '../services/Api.js';
 
 let currentReportType = null;
 let progressChartInstance = null;
@@ -175,7 +176,6 @@ function renderAssessmentPreview(patient, assessment) {
         if (sevCounts[s.severity] !== undefined) sevCounts[s.severity]++;
     }
 
-    const soap = assessment.soapNotes;
     const pa = assessment.postureAnalysis;
 
     let html = `
@@ -217,28 +217,6 @@ function renderAssessmentPreview(patient, assessment) {
         html += `</tbody></table>`;
     }
 
-    // SOAP summary
-    if (soap) {
-        html += `<div class="rpt-soap-summary">`;
-        const soapSections = [
-            { key: 'subjective', label: 'S', fields: ['chiefComplaint', 'symptomDescription'] },
-            { key: 'objective', label: 'O', fields: ['autoFindings', 'rom', 'specialTests'] },
-            { key: 'assessment', label: 'A', fields: ['clinicalImpression', 'progressLevel'] },
-            { key: 'plan', label: 'P', fields: ['treatment', 'hep', 'frequency'] },
-        ];
-        for (const sec of soapSections) {
-            const data = soap[sec.key];
-            if (!data) continue;
-            const values = sec.fields.map(f => data[f]).filter(Boolean);
-            if (values.length === 0) continue;
-            html += `<div class="rpt-soap-item">
-                <span class="rpt-soap-label">${sec.label}</span>
-                <span>${values.map(v => sec.key === 'assessment' && sec.fields.indexOf('progressLevel') >= 0 && v === data.progressLevel ? (PROGRESS_LABELS[v] || v) : escapeHtml(String(v))).join(' · ')}</span>
-            </div>`;
-        }
-        html += `</div>`;
-    }
-
     // Posture analysis metrics
     if (pa && pa.metrics) {
         const m = pa.metrics;
@@ -257,7 +235,7 @@ function renderAssessmentPreview(patient, assessment) {
 
 // ── Progress Report ──
 
-function renderProgressReport(patient, container) {
+async function renderProgressReport(patient, container) {
     const assessments = (patient.visits || []).slice().sort((a, b) => a.date - b.date);
 
     if (assessments.length === 0) {
@@ -314,6 +292,8 @@ function renderProgressReport(patient, container) {
             </div>` : '<div class="rpt-empty">추이 차트를 표시하려면 2건 이상의 내원이 필요합니다.</div>'}
 
             ${allRegions.size > 0 ? renderSeverityComparisonTable(firstSevMap, lastSevMap, allRegions) : ''}
+
+            <div id="rpt-app-data-container"></div>
         </div>
     `;
 
@@ -323,6 +303,93 @@ function renderProgressReport(patient, container) {
 
     if (assessments.length >= 2) {
         renderProgressChart(assessments);
+    }
+
+    // Load patient app data
+    await renderAppDataInProgressReport(patient.id);
+}
+
+async function renderAppDataInProgressReport(patientId) {
+    const container = document.getElementById('rpt-app-data-container');
+    if (!container) return;
+
+    container.innerHTML = '<div class="rpt-app-note">환자 앱 데이터를 불러오는 중...</div>';
+
+    try {
+        const [summary, checkins, workouts, painDrawings] = await Promise.all([
+            fetchPatientProgress(patientId).catch(() => null),
+            fetchPatientCheckins(patientId, 5).catch(() => []),
+            fetchPatientWorkouts(patientId, 5).catch(() => []),
+            fetchPatientPainDrawings(patientId, 6).catch(() => []),
+        ]);
+
+        let html = '<div class="rpt-app-data"><h4>환자 앱 데이터</h4>';
+
+        // Summary cards
+        if (summary) {
+            const totalCheckins = summary.total_checkins ?? 0;
+            const totalWorkouts = summary.total_workouts ?? 0;
+            const avgPain7d = summary.avg_pain_7d != null ? summary.avg_pain_7d.toFixed(1) : '-';
+            const completionRate = summary.completion_rate_7d != null ? Math.round(summary.completion_rate_7d) + '%' : '-';
+
+            html += `<div class="rpt-summary-cards">
+                <div class="rpt-summary-card"><div class="value">${totalCheckins}</div><div class="label">총 체크인</div></div>
+                <div class="rpt-summary-card"><div class="value">${totalWorkouts}</div><div class="label">총 운동</div></div>
+                <div class="rpt-summary-card"><div class="value">${avgPain7d}</div><div class="label">7일 평균 통증</div></div>
+                <div class="rpt-summary-card"><div class="value">${completionRate}</div><div class="label">7일 완수율</div></div>
+            </div>`;
+        }
+
+        // Recent checkins
+        if (checkins.length > 0) {
+            html += `<div class="rpt-subsection"><h5>최근 체크인</h5><table class="rpt-table"><thead><tr><th>날짜</th><th>통증</th><th>기분</th><th>메모</th></tr></thead><tbody>`;
+            for (const c of checkins) {
+                const date = new Date(c.created_at || c.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+                html += `<tr>
+                    <td>${date}</td>
+                    <td>${c.pain_level ?? '-'}/10</td>
+                    <td>${c.mood ?? '-'}</td>
+                    <td>${escapeHtml(c.notes || '-')}</td>
+                </tr>`;
+            }
+            html += '</tbody></table></div>';
+        }
+
+        // Recent workouts
+        if (workouts.length > 0) {
+            html += `<div class="rpt-subsection"><h5>최근 운동 기록</h5><table class="rpt-table"><thead><tr><th>날짜</th><th>운동명</th><th>완료</th><th>난이도</th></tr></thead><tbody>`;
+            for (const w of workouts) {
+                const date = new Date(w.created_at || w.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+                html += `<tr>
+                    <td>${date}</td>
+                    <td>${escapeHtml(w.exercise_name || w.prescription_name || '-')}</td>
+                    <td>${w.completed ? 'O' : 'X'}</td>
+                    <td>${w.rpe || '-'}</td>
+                </tr>`;
+            }
+            html += '</tbody></table></div>';
+        }
+
+        // Pain drawings
+        if (painDrawings.length > 0) {
+            html += `<div class="rpt-subsection"><h5>통증 드로잉</h5><div class="rpt-drawings-grid">`;
+            for (const d of painDrawings) {
+                const src = d.image_url || d.drawing_data;
+                if (src) {
+                    html += `<img class="rpt-drawing-thumb" src="${escapeHtml(src)}" alt="통증 드로잉">`;
+                }
+            }
+            html += '</div></div>';
+        }
+
+        if (!summary && checkins.length === 0 && workouts.length === 0 && painDrawings.length === 0) {
+            html += '<div class="rpt-app-note">환자 앱 데이터가 없습니다.</div>';
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = '<div class="rpt-app-note">환자 앱 데이터를 불러올 수 없습니다.</div>';
     }
 }
 

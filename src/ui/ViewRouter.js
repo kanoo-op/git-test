@@ -15,7 +15,7 @@ import { renderMappingEditor, showNewRegionForm, hideNewRegionForm, saveNewRegio
 import { hideExerciseRecommendations } from './ExerciseRecommendation.js';
 import { refreshReportPanel } from './ReportPanel.js';
 import { stopRealtimePose, isRealtimeRunning } from '../pose/RealtimePose.js';
-import { renderSoapRecordsView } from '../patients/SoapRecords.js';
+
 
 // ======== Shared State ========
 
@@ -160,7 +160,6 @@ export function switchView(view) {
     document.getElementById('patient-detail-view').style.display = 'none';
     document.getElementById('mapping-editor').style.display = 'none';
     document.getElementById('posture-analysis-view').style.display = 'none';
-    document.getElementById('soap-records-view').style.display = 'none';
     document.getElementById('reports-view').style.display = 'none';
 
     mappingEditorActive = false;
@@ -185,10 +184,6 @@ export function switchView(view) {
             document.getElementById('posture-analysis-view').style.display = 'block';
             updatePosturePatientBar();
             if (window._refreshDashboardCharts) window._refreshDashboardCharts();
-            break;
-        case 'soap-records':
-            document.getElementById('soap-records-view').style.display = 'block';
-            renderSoapRecordsView();
             break;
         case 'reports':
             document.getElementById('reports-view').style.display = 'block';
