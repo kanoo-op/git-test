@@ -51,7 +51,6 @@ def _assessment_to_out(a: Assessment) -> AssessmentOut:
         overall_notes=decrypt(a.overall_notes),
         highlight_state=a.highlight_state,
         posture_analysis=a.posture_analysis,
-        soap_notes=a.soap_notes,
         created_at=a.created_at,
         updated_at=a.updated_at,
         selections=[
@@ -113,7 +112,6 @@ async def create_assessment(
         date=body.date,
         summary=body.summary,
         overall_notes=encrypt(body.overall_notes),
-        soap_notes=body.soap_notes,
         created_by=user.id,
     )
     db.add(assessment)
@@ -128,7 +126,6 @@ async def create_assessment(
         date=assessment.date,
         summary=assessment.summary,
         overall_notes=decrypt(assessment.overall_notes),
-        soap_notes=assessment.soap_notes,
         created_at=assessment.created_at,
         updated_at=assessment.updated_at,
         selections=[],
@@ -160,7 +157,6 @@ async def get_assessment(
         overall_notes=decrypt(assessment.overall_notes),
         highlight_state=assessment.highlight_state,
         posture_analysis=assessment.posture_analysis,
-        soap_notes=assessment.soap_notes,
         created_at=assessment.created_at,
         updated_at=assessment.updated_at,
         selections=[
@@ -196,7 +192,7 @@ async def update_assessment(
         if key == "overall_notes":
             setattr(assessment, key, encrypt(value))
         else:
-            setattr(assessment, key, value)  # soap_notes stored as JSONB directly
+            setattr(assessment, key, value)
     await db.commit()
     await db.refresh(assessment)
 

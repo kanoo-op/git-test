@@ -25,14 +25,12 @@ class AssessmentCreate(BaseModel):
     date: Optional[datetime] = None
     summary: Optional[str] = None
     overall_notes: Optional[str] = None
-    soap_notes: Optional[dict[str, Any]] = None
 
 
 class AssessmentUpdate(BaseModel):
     summary: Optional[str] = None
     overall_notes: Optional[str] = None
     posture_analysis: Optional[dict[str, Any]] = None
-    soap_notes: Optional[dict[str, Any]] = None
 
 
 class AssessmentOut(BaseModel):
@@ -43,7 +41,6 @@ class AssessmentOut(BaseModel):
     overall_notes: Optional[str] = None
     highlight_state: Optional[Any] = None
     posture_analysis: Optional[dict[str, Any]] = None
-    soap_notes: Optional[dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
     selections: list[SelectionOut] = []
