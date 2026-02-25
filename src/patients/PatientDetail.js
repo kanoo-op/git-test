@@ -360,7 +360,7 @@ function renderAssessmentTimeline(patient) {
         return;
     }
 
-    const sorted = [...assessments].filter(a => a.type !== 'soap-only').sort((a, b) => b.date - a.date);
+    const sorted = [...assessments].sort((a, b) => b.date - a.date);
 
     if (sorted.length === 0) {
         timeline.innerHTML = `

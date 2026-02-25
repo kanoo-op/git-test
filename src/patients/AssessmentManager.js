@@ -1,4 +1,4 @@
-// AssessmentManager.js - Session (visit) start/end, SOAP notes, region assessment panel, severity handling
+// AssessmentManager.js - Session (visit) start/end, region assessment panel, severity handling
 
 import * as storage from '../services/Storage.js';
 import { highlightMesh, unhighlightMesh, getHighlightState, deselectCurrentMesh, selectMesh, applyRegionColors, resetRegionColors } from '../anatomy/Highlights.js';

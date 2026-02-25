@@ -204,7 +204,7 @@ export async function syncPatientsFromServer() {
             }
         }
         if (added > 0) {
-            console.log(`Synced ${added} patients from server`);
+            console.debug(`Synced ${added} patients from server`);
         }
     } catch (e) {
         console.warn('Failed to sync patients from server:', e);

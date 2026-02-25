@@ -3461,6 +3461,32 @@ input, textarea, select {
 .storage-usage-fill.warning { background: #E65100; }
 .storage-usage-fill.danger { background: var(--status-severe); }
 
+/* Dashboard - Patient App Stats */
+.dashboard-stats--app {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.stat-card--app {
+    background: linear-gradient(135deg, var(--bg-secondary), #f0f7f4);
+    border-color: var(--accent-primary);
+    border-width: 1px;
+}
+
+.stat-card--app .stat-value {
+    font-size: 28px;
+    color: var(--accent-primary);
+}
+
+.stat-card--app .stat-label {
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-stats--app {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 /* ========================================
    Confidence Bar (자세 분석 신뢰도)
    ======================================== */

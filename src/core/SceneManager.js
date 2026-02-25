@@ -119,7 +119,7 @@ export function initScene(canvas) {
     });
     canvas.addEventListener('webglcontextrestored', () => {
         isContextLost = false;
-        console.log('WebGL context restored');
+        console.debug('WebGL context restored');
         // Force material recompilation after context restore
         scene.traverse((child) => {
             if (child.isMesh && child.material) {

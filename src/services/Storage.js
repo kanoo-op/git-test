@@ -87,7 +87,7 @@ async function migrateFromLocalStorage() {
         }
 
         localStorage.setItem('_idb_migrated', 'true');
-        console.log('Migration from localStorage to IndexedDB complete');
+        console.debug('Migration from localStorage to IndexedDB complete');
     } catch (e) {
         console.warn('Migration error:', e);
     }
@@ -286,7 +286,6 @@ export function createVisit(patientId) {
         highlightState: [],
         summary: '',
         overallNotes: '',
-        soapNotes: null,
         exercisePlan: []
     };
     patient.visits.push(visit);
